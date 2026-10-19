@@ -1,0 +1,245 @@
+# Derived from apify-client-python (Copyright Apify Technologies s.r.o., Apache-2.0).
+# Modified by TeraShift GmbH. See the LICENSE and NOTICE files.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from scrapely_client._docs import docs_group
+from scrapely_client._models import (
+    KeyValueStore,
+    KeyValueStoreResponse,
+    ListOfKeyValueStores,
+    ListOfKeyValueStoresResponse,
+)
+from scrapely_client._pagination import get_items_iterator, get_items_iterator_async
+from scrapely_client._resource_clients._resource_client import ResourceClient, ResourceClientAsync
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterator
+
+    from scrapely_client._literals import StorageOwnership
+    from scrapely_client.types import Timeout
+
+
+@docs_group('Resource clients')
+class KeyValueStoreCollectionClient(ResourceClient):
+    """Sub-client for the key-value store collection.
+
+    Provides methods to manage the key-value store collection, e.g. list or create key-value stores. Obtain an instance
+    via an appropriate method on the `ScrapelyClient` class.
+    """
+
+    def __init__(
+        self,
+        *,
+        resource_path: str = 'key-value-stores',
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            resource_path=resource_path,
+            **kwargs,
+        )
+
+    def list(
+        self,
+        *,
+        unnamed: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        desc: bool | None = None,
+        ownership: StorageOwnership | None = None,
+        timeout: Timeout = 'medium',
+    ) -> ListOfKeyValueStores:
+        """List the available key-value stores.
+
+
+        Args:
+            unnamed: Whether to include unnamed key-value stores in the list.
+            limit: How many key-value stores to retrieve.
+            offset: What key-value store to include as first when retrieving the list.
+            desc: Whether to sort the key-value stores in descending order based on their modification date.
+            ownership: Filter by ownership. `'ownedByMe'` returns only user's own key-value stores,
+                `'sharedWithMe'` returns only key-value stores shared with the user.
+            timeout: Timeout for the API HTTP request.
+
+        Returns:
+            The list of available key-value stores matching the specified filters.
+        """
+        result = self._list(
+            timeout=timeout,
+            unnamed=unnamed,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            ownership=ownership,
+        )
+        return ListOfKeyValueStoresResponse.model_validate(result).data
+
+    def iterate(
+        self,
+        *,
+        unnamed: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        desc: bool | None = None,
+        ownership: StorageOwnership | None = None,
+        timeout: Timeout = 'medium',
+    ) -> Iterator[KeyValueStore]:
+        """Iterate over the available key-value stores.
+
+        Simple `list` does only one API call, possibly not listing all items matching the criteria. This method
+        returns an iterator that is capable of making multiple API calls to retrieve all items matching the criteria.
+
+
+        Args:
+            unnamed: Whether to include unnamed key-value stores in the list.
+            limit: How many key-value stores to retrieve.
+            offset: What key-value store to include as first when retrieving the list.
+            desc: Whether to sort the key-value stores in descending order based on their modification date.
+            ownership: Filter by ownership. 'ownedByMe' returns only user's own key-value stores,
+                'sharedWithMe' returns only key-value stores shared with the user.
+            timeout: Timeout for the API HTTP request.
+
+        Yields:
+            The available key-value stores matching the specified filters.
+        """
+
+        def _callback(*, limit: int | None = None, offset: int | None = None) -> ListOfKeyValueStores:
+            return self.list(
+                unnamed=unnamed, limit=limit, offset=offset, desc=desc, ownership=ownership, timeout=timeout
+            )
+
+        return get_items_iterator(_callback, limit=limit, offset=offset)
+
+    def get_or_create(
+        self,
+        *,
+        name: str | None = None,
+        schema: dict | None = None,
+        timeout: Timeout = 'short',
+    ) -> KeyValueStore:
+        """Retrieve a named key-value store, or create a new one when it doesn't exist.
+
+
+        Args:
+            name: The name of the key-value store to retrieve or create.
+            schema: The schema of the key-value store.
+            timeout: Timeout for the API HTTP request.
+
+        Returns:
+            The retrieved or newly-created key-value store.
+        """
+        result = self._get_or_create(timeout=timeout, name=name, resource_fields={'schema': schema})
+        return KeyValueStoreResponse.model_validate(result).data
+
+
+@docs_group('Resource clients')
+class KeyValueStoreCollectionClientAsync(ResourceClientAsync):
+    """Sub-client for the key-value store collection.
+
+    Provides methods to manage the key-value store collection, e.g. list or create key-value stores. Obtain an instance
+    via an appropriate method on the `ScrapelyClientAsync` class.
+    """
+
+    def __init__(
+        self,
+        *,
+        resource_path: str = 'key-value-stores',
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            resource_path=resource_path,
+            **kwargs,
+        )
+
+    async def list(
+        self,
+        *,
+        unnamed: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        desc: bool | None = None,
+        ownership: StorageOwnership | None = None,
+        timeout: Timeout = 'medium',
+    ) -> ListOfKeyValueStores:
+        """List the available key-value stores.
+
+
+        Args:
+            unnamed: Whether to include unnamed key-value stores in the list.
+            limit: How many key-value stores to retrieve.
+            offset: What key-value store to include as first when retrieving the list.
+            desc: Whether to sort the key-value stores in descending order based on their modification date.
+            ownership: Filter by ownership. `'ownedByMe'` returns only user's own key-value stores,
+                `'sharedWithMe'` returns only key-value stores shared with the user.
+            timeout: Timeout for the API HTTP request.
+
+        Returns:
+            The list of available key-value stores matching the specified filters.
+        """
+        result = await self._list(
+            timeout=timeout,
+            unnamed=unnamed,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+            ownership=ownership,
+        )
+        return ListOfKeyValueStoresResponse.model_validate(result).data
+
+    def iterate(
+        self,
+        *,
+        unnamed: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        desc: bool | None = None,
+        ownership: StorageOwnership | None = None,
+        timeout: Timeout = 'medium',
+    ) -> AsyncIterator[KeyValueStore]:
+        """Iterate over the available key-value stores.
+
+        Simple `list` does only one API call, possibly not listing all items matching the criteria. This method
+        returns an iterator that is capable of making multiple API calls to retrieve all items matching the criteria.
+
+
+        Args:
+            unnamed: Whether to include unnamed key-value stores in the list.
+            limit: How many key-value stores to retrieve.
+            offset: What key-value store to include as first when retrieving the list.
+            desc: Whether to sort the key-value stores in descending order based on their modification date.
+            ownership: Filter by ownership. 'ownedByMe' returns only user's own key-value stores,
+                'sharedWithMe' returns only key-value stores shared with the user.
+            timeout: Timeout for the API HTTP request.
+
+        Yields:
+            The available key-value stores matching the specified filters.
+        """
+
+        async def _callback(*, limit: int | None = None, offset: int | None = None) -> ListOfKeyValueStores:
+            return await self.list(
+                unnamed=unnamed, limit=limit, offset=offset, desc=desc, ownership=ownership, timeout=timeout
+            )
+
+        return get_items_iterator_async(_callback, limit=limit, offset=offset)
+
+    async def get_or_create(
+        self,
+        *,
+        name: str | None = None,
+        schema: dict | None = None,
+        timeout: Timeout = 'short',
+    ) -> KeyValueStore:
+        """Retrieve a named key-value store, or create a new one when it doesn't exist.
+
+
+        Args:
+            name: The name of the key-value store to retrieve or create.
+            schema: The schema of the key-value store.
+            timeout: Timeout for the API HTTP request.
+
+        Returns:
+            The retrieved or newly-created key-value store.
+        """
+        result = await self._get_or_create(timeout=timeout, name=name, resource_fields={'schema': schema})
+        return KeyValueStoreResponse.model_validate(result).data
