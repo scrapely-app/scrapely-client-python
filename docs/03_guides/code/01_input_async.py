@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/03_guides/code/01_input_async.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 import asyncio
 from datetime import timedelta
 

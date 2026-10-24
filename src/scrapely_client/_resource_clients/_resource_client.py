@@ -13,7 +13,7 @@ from scrapely_client._consts import DEFAULT_WAIT_FOR_FINISH, DEFAULT_WAIT_WHEN_J
 from scrapely_client._docs import docs_group
 from scrapely_client._logging import WithLogDetailsClient
 from scrapely_client._utils.errors import catch_not_found_for_resource_or_throw, catch_not_found_or_throw
-from scrapely_client._utils.http import response_to_dict, to_safe_id
+from scrapely_client._utils.http import response_to_dict, to_path_segment, to_safe_id
 from scrapely_client._utils.time import to_seconds
 from scrapely_client.errors import ApifyApiError
 
@@ -77,7 +77,8 @@ class ResourceClientBase(metaclass=WithLogDetailsClient):
         """Build the full resource URL from base URL, path, and optional ID."""
         url = f'{self._base_url}/{self._resource_path}'
         if self._resource_id is not None:
-            url = f'{url}/{to_safe_id(self._resource_id)}'
+            # One path segment whatever the id holds: `..`, `?` or `#` must not retarget the call.
+            url = f'{url}/{to_path_segment(to_safe_id(self._resource_id))}'
         return url
 
     @cached_property

@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/03_guides/code/04_pandas_async.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 import asyncio
 
 import pandas as pd

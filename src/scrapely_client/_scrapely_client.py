@@ -2,12 +2,14 @@
 # Modified by TeraShift GmbH. See the LICENSE and NOTICE files.
 from __future__ import annotations
 
+import os
 from functools import cached_property
 from typing import TYPE_CHECKING
 
 from scrapely_client._charging import ChargingHooks, wrap_dataset_client_with_charging
 from scrapely_client._client_registry import ClientRegistry, ClientRegistryAsync
 from scrapely_client._consts import (
+    API_URL_ENV_VAR,
     API_VERSION,
     DEFAULT_API_URL,
     DEFAULT_MAX_RETRIES,
@@ -31,6 +33,10 @@ from scrapely_client._resource_clients import (
     ActorVersionClientAsync,
     ActorVersionCollectionClient,
     ActorVersionCollectionClientAsync,
+    AutomationClient,
+    AutomationClientAsync,
+    AutomationCollectionClient,
+    AutomationCollectionClientAsync,
     BuildClient,
     BuildClientAsync,
     BuildCollectionClient,
@@ -86,6 +92,13 @@ if TYPE_CHECKING:
     from scrapely_client.types import HttpCompressionAlgorithm
 
 
+def _resolve_api_url(api_url: str | None) -> str:
+    """Return `api_url` if given, else the `SCRAPELY_API_URL` environment variable, else the production API."""
+    if api_url is not None:
+        return api_url
+    return os.environ.get(API_URL_ENV_VAR, '').strip() or DEFAULT_API_URL
+
+
 @docs_group('Scrapely API clients')
 class ApifyClient:
     """Synchronous client for the Scrapely API.
@@ -120,7 +133,7 @@ class ApifyClient:
         self,
         token: str | None = None,
         *,
-        api_url: str = DEFAULT_API_URL,
+        api_url: str | None = None,
         api_public_url: str | None = DEFAULT_API_URL,
         max_retries: int = DEFAULT_MAX_RETRIES,
         min_delay_between_retries: timedelta = DEFAULT_MIN_DELAY_BETWEEN_RETRIES,
@@ -140,9 +153,9 @@ class ApifyClient:
         Args:
             token: The Scrapely API token. You can find your token on the
                 Integrations page in the Scrapely dashboard.
-            api_url: The URL of the Scrapely API server to connect to. Defaults to https://api.scrape.ly. It can
-                be an internal URL that is not globally accessible, in which case `api_public_url` should be set
-                as well.
+            api_url: The URL of the Scrapely API server to connect to. When not given, the `SCRAPELY_API_URL`
+                environment variable is used, then https://api.scrape.ly. It can be an internal URL that is not
+                globally accessible, in which case `api_public_url` should be set as well.
             api_public_url: The globally accessible URL of the Scrapely API server. Should be set only if `api_url`
                 is an internal URL that is not globally accessible. Defaults to https://api.scrape.ly.
             max_retries: How many times to retry a failed request at most.
@@ -161,7 +174,7 @@ class ApifyClient:
             default_dataset_id: ID of the actor run's default dataset, used to gate charging interception.
         """
         # We need to do this because of mocking in tests and default mutable arguments.
-        api_url = DEFAULT_API_URL if api_url is None else api_url
+        api_url = _resolve_api_url(api_url)
         api_public_url = DEFAULT_API_URL if api_public_url is None else api_public_url
 
         if headers:
@@ -230,7 +243,7 @@ class ApifyClient:
         cls,
         token: str | None = None,
         *,
-        api_url: str = DEFAULT_API_URL,
+        api_url: str | None = None,
         api_public_url: str | None = DEFAULT_API_URL,
         http_client: HttpClient,
     ) -> ApifyClient:
@@ -259,7 +272,8 @@ class ApifyClient:
         Args:
             token: The Scrapely API token. It is set as the `Authorization` header on the custom client,
                 unless the client already has one configured.
-            api_url: The URL of the Scrapely API server to connect to. Defaults to https://api.scrape.ly.
+            api_url: The URL of the Scrapely API server to connect to. When not given, the `SCRAPELY_API_URL`
+                environment variable is used, then https://api.scrape.ly.
             api_public_url: The globally accessible URL of the Scrapely API server. Defaults to https://api.scrape.ly.
             http_client: A custom HTTP client instance extending `HttpClient`.
         """
@@ -419,6 +433,18 @@ class ApifyClient:
         """
         return ScheduleClient(resource_id=schedule_id, **self._base_kwargs)
 
+    def automation(self, automation_id: str) -> AutomationClient:
+        """Get the sub-client for a specific automation (Scrapely-only).
+
+        Args:
+            automation_id: ID of the automation to be manipulated.
+        """
+        return AutomationClient(resource_id=automation_id, **self._base_kwargs)
+
+    def automations(self) -> AutomationCollectionClient:
+        """Get the sub-client for the automation collection, allowing to list and create automations (Scrapely-only)."""
+        return AutomationCollectionClient(**self._base_kwargs)
+
     def schedules(self) -> ScheduleCollectionClient:
         """Get the sub-client for the schedule collection, allowing to list and create schedules."""
         return ScheduleCollectionClient(**self._base_kwargs)
@@ -497,7 +523,7 @@ class ApifyClientAsync:
         self,
         token: str | None = None,
         *,
-        api_url: str = DEFAULT_API_URL,
+        api_url: str | None = None,
         api_public_url: str | None = DEFAULT_API_URL,
         max_retries: int = DEFAULT_MAX_RETRIES,
         min_delay_between_retries: timedelta = DEFAULT_MIN_DELAY_BETWEEN_RETRIES,
@@ -517,9 +543,9 @@ class ApifyClientAsync:
         Args:
             token: The Scrapely API token. You can find your token on the
                 Integrations page in the Scrapely dashboard.
-            api_url: The URL of the Scrapely API server to connect to. Defaults to https://api.scrape.ly. It can
-                be an internal URL that is not globally accessible, in which case `api_public_url` should be set
-                as well.
+            api_url: The URL of the Scrapely API server to connect to. When not given, the `SCRAPELY_API_URL`
+                environment variable is used, then https://api.scrape.ly. It can be an internal URL that is not
+                globally accessible, in which case `api_public_url` should be set as well.
             api_public_url: The globally accessible URL of the Scrapely API server. Should be set only if `api_url`
                 is an internal URL that is not globally accessible. Defaults to https://api.scrape.ly.
             max_retries: How many times to retry a failed request at most.
@@ -538,7 +564,7 @@ class ApifyClientAsync:
             default_dataset_id: ID of the actor run's default dataset, used to gate charging interception.
         """
         # We need to do this because of mocking in tests and default mutable arguments.
-        api_url = DEFAULT_API_URL if api_url is None else api_url
+        api_url = _resolve_api_url(api_url)
         api_public_url = DEFAULT_API_URL if api_public_url is None else api_public_url
 
         if headers:
@@ -607,7 +633,7 @@ class ApifyClientAsync:
         cls,
         token: str | None = None,
         *,
-        api_url: str = DEFAULT_API_URL,
+        api_url: str | None = None,
         api_public_url: str | None = DEFAULT_API_URL,
         http_client: HttpClientAsync,
     ) -> ApifyClientAsync:
@@ -636,7 +662,8 @@ class ApifyClientAsync:
         Args:
             token: The Scrapely API token. It is set as the `Authorization` header on the custom client,
                 unless the client already has one configured.
-            api_url: The URL of the Scrapely API server to connect to. Defaults to https://api.scrape.ly.
+            api_url: The URL of the Scrapely API server to connect to. When not given, the `SCRAPELY_API_URL`
+                environment variable is used, then https://api.scrape.ly.
             api_public_url: The globally accessible URL of the Scrapely API server. Defaults to https://api.scrape.ly.
             http_client: A custom HTTP client instance extending `HttpClientAsync`.
         """
@@ -794,6 +821,18 @@ class ApifyClientAsync:
             schedule_id: ID of the schedule to be manipulated.
         """
         return ScheduleClientAsync(resource_id=schedule_id, **self._base_kwargs)
+
+    def automation(self, automation_id: str) -> AutomationClientAsync:
+        """Get the sub-client for a specific automation (Scrapely-only).
+
+        Args:
+            automation_id: ID of the automation to be manipulated.
+        """
+        return AutomationClientAsync(resource_id=automation_id, **self._base_kwargs)
+
+    def automations(self) -> AutomationCollectionClientAsync:
+        """Get the sub-client for the automation collection, allowing to list and create automations (Scrapely-only)."""
+        return AutomationCollectionClientAsync(**self._base_kwargs)
 
     def schedules(self) -> ScheduleCollectionClientAsync:
         """Get the sub-client for the schedule collection, allowing to list and create schedules."""

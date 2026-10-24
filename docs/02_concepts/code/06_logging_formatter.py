@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/02_concepts/code/06_logging_formatter.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 import logging
 
 # Create a custom logging formatter. Reference only the properties present

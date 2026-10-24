@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/03_guides/code/05_custom_http_client_async.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 from __future__ import annotations
 
 import asyncio

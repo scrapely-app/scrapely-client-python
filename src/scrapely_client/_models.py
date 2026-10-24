@@ -51,9 +51,7 @@ class ActVersion(BaseModel):
     version_number: Annotated[
         str | None, Field(examples=['0.0'], pattern='^([0-9]|[1-9][0-9])\\.([0-9]|[1-9][0-9])(\\.[0-9]+)?$')
     ] = None
-    git_repo_url: Annotated[
-        str | None, Field(examples=['https://github.com/example/my-actor.git#main:src'])
-    ] = None
+    git_repo_url: Annotated[str | None, Field(examples=['https://github.com/example/my-actor.git#main:src'])] = None
     """
     URL of the git repository, present when sourceType is GIT_REPO.
     """
@@ -151,9 +149,7 @@ class Actor(BaseModel):
     """
     Description of the Actor to display by search engines such as Google.
     """
-    picture_url: Annotated[
-        str | None, Field(examples=['https://images.scrape.ly/.../actor-picture.png'])
-    ] = None
+    picture_url: Annotated[str | None, Field(examples=['https://images.scrape.ly/.../actor-picture.png'])] = None
     """
     URL of the Actor's icon, displayed on the Actor's page in Scrapely Store and dashboard.
     """
@@ -224,7 +220,7 @@ class ActorChargeEvent(BaseModel):
 
 @docs_group('Models')
 class ActorDefinition(BaseModel):
-    """The definition of the Actor, the full specification of this field can be found in the upstream API docs."""
+    """The definition of the Actor, as declared in its Actor configuration file (for example `.actor/actor.json`)."""
 
     model_config = ConfigDict(
         extra='allow',
@@ -265,7 +261,7 @@ class ActorDefinition(BaseModel):
     """
     input: dict[str, Any] | None = None
     """
-    The input schema object, the full specification can be found in the upstream API docs
+    The input schema object.
     """
     changelog: str | None = None
     """
@@ -737,11 +733,6 @@ class CommonActorPricingInfo(BaseModel):
         populate_by_name=True,
         alias_generator=to_camel,
     )
-    apify_margin_percentage: float | None = None
-    """
-    In [0, 1], fraction of pricePerUnitUsd that goes to Scrapely.
-    Optional: Scrapely staging PAY_PER_EVENT payloads often omit this.
-    """
     created_at: AwareDatetime | None = None
     """
     When this pricing info record has been created.
@@ -920,7 +911,6 @@ class CurrentPricingInfo(BaseModel):
         alias_generator=to_camel,
     )
     pricing_model: Annotated[str, Field(examples=['FREE'])]
-    apify_margin_percentage: Annotated[float | None, Field(examples=[0.2])] = None
     created_at: Annotated[AwareDatetime | None, Field(examples=['2023-01-01T00:00:00.000Z'])] = None
     started_at: Annotated[AwareDatetime | None, Field(examples=['2023-01-01T00:00:00.000Z'])] = None
     notified_about_change_at: Annotated[AwareDatetime | None, Field(examples=[None])] = None
@@ -994,7 +984,7 @@ class Dataset(BaseModel):
         ),
     ] = None
     """
-    Defines the schema of items in your dataset, the full specification can be found in the upstream API docs
+    Defines the schema of items in your dataset.
     """
     console_url: Annotated[AnyUrl, Field(examples=['https://api.scrape.ly/storage/datasets/27TmTznX9YPeAYhkC'])]
     items_public_url: Annotated[
@@ -1296,7 +1286,11 @@ class EncodeAndSignData(BaseModel):
 
 @docs_group('Models')
 class DecodeAndVerifyRequest(EncodeAndSignData):
-    pass
+    model_config = ConfigDict(
+        extra='allow',
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
 
 
 @docs_group('Models')
@@ -1984,8 +1978,10 @@ class MonthlyUsage(BaseModel):
         alias_generator=to_camel,
     )
     usage_cycle: UsageCycle
-    # Scrapely emits raw byte counts (int) for the `DATA_TRANSFER_*_BYTES` keys
     monthly_service_usage: dict[str, UsageItem | int]
+    """
+    Scrapely emits raw byte counts (integers) for the `DATA_TRANSFER_*_BYTES` keys.
+    """
     daily_service_usages: list[DailyServiceUsages]
     total_usage_credits_usd_before_volume_discount: Annotated[float, Field(examples=[0.786143673840067])]
     total_usage_credits_usd_after_volume_discount: Annotated[float, Field(examples=[0.786143673840067])]
@@ -2139,9 +2135,14 @@ class ListOfStoreActors(PaginationResponse):
         alias_generator=to_camel,
     )
     items: list[StoreListActor]
-    # Scrapely's store envelope omits `desc` and `count`; tolerate their absence.
     desc: Annotated[bool, Field(examples=[False])] = False
+    """
+    Whether the results are sorted in descending order. The store listing may omit it.
+    """
     count: Annotated[int, Field(examples=[1], ge=0)] = 0
+    """
+    The number of items returned in this response. The store listing may omit it.
+    """
 
 
 @docs_group('Models')
@@ -2291,7 +2292,9 @@ class Profile(BaseModel):
     )
     bio: Annotated[str | None, Field(examples=['I started web scraping in 1985 using Altair BASIC.'])] = None
     name: Annotated[str | None, Field(examples=['Jane Doe'])] = None
-    picture_url: Annotated[AnyUrl | None, Field(examples=['https://api.scrape.ly/img/anonymous_user_picture.png'])] = None
+    picture_url: Annotated[AnyUrl | None, Field(examples=['https://api.scrape.ly/img/anonymous_user_picture.png'])] = (
+        None
+    )
     github_username: Annotated[str | None, Field(examples=['torvalds.'])] = None
     website_url: Annotated[AnyUrl | None, Field(examples=['http://www.example.com'])] = None
     twitter_username: Annotated[str | None, Field(examples=['@BillGates'])] = None
@@ -3420,7 +3423,7 @@ class Storages(BaseModel):
     )
     dataset: dict[str, Any] | None = None
     """
-    Defines the schema of items in your dataset, the full specification can be found in the upstream API docs
+    Defines the schema of items in your dataset.
     """
 
 
@@ -3432,8 +3435,10 @@ class StoreListActor(BaseModel):
         alias_generator=to_camel,
     )
     id: Annotated[str, Field(examples=['zdc3Pyhyz3m8vjDeM'])]
-    # Scrapely can return null titles; tolerate their absence.
     title: Annotated[str | None, Field(examples=['My Public Actor'])] = None
+    """
+    Scrapely can return a `null` title.
+    """
     name: Annotated[str, Field(examples=['my-public-actor'])]
     username: Annotated[str, Field(examples=['jane35'])]
     user_full_name: Annotated[str | None, Field(examples=['Jane H. Doe'])] = None
@@ -3758,7 +3763,7 @@ class UpdateLimitsRequest(BaseModel):
     """
     data_retention_days: Annotated[int | None, Field(examples=[90])] = None
     """
-    How many days unnamed storages (datasets, key-value stores and request queues without a name) are kept: Free 2 days (48 hours), Starter 31, Scale 60, Business 90. Runs follow their own retention: on the Free plan the latest 10 runs per Actor are kept and older ones are deleted after 7 days; on paid plans runs are deleted after 31 days. This value is set by your plan and cannot be changed through the API.
+    How many days unnamed storages (datasets, key-value stores and request queues without a name) are kept: Free 2 days (48 hours), Starter 31, Scale 60, Business 90. Runs and their logs are kept for the same time as their results; on the Free plan your latest 10 runs are kept with their results until you delete them. This value is set by your plan and cannot be changed through the API.
 
     """
 
@@ -3806,7 +3811,11 @@ class UpdateRunRequest(BaseModel):
 
 @docs_group('Models')
 class UpdateStoreRequest(UpdateDatasetRequest):
-    pass
+    model_config = ConfigDict(
+        extra='allow',
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
 
 
 @docs_group('Models')
@@ -3915,7 +3924,9 @@ class Version(BaseModel):
         populate_by_name=True,
         alias_generator=to_camel,
     )
-    version_number: Annotated[str, Field(examples=['0.0'], pattern='^([0-9]|[1-9][0-9])\\.([0-9]|[1-9][0-9])(\\.[0-9]+)?$')]
+    version_number: Annotated[
+        str, Field(examples=['0.0'], pattern='^([0-9]|[1-9][0-9])\\.([0-9]|[1-9][0-9])(\\.[0-9]+)?$')
+    ]
     """
     The version number of the Actor. `MAJOR.MINOR` or `MAJOR.MINOR.PATCH` (Scrapely staging uses triplets like `0.0.1`).
     """
@@ -4043,7 +4054,11 @@ class WebhookDispatch(BaseModel):
 
 @docs_group('Models')
 class WebhookDispatchResponse(TestWebhookResponse):
-    pass
+    model_config = ConfigDict(
+        extra='allow',
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
 
 
 @docs_group('Models')

@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "scrapely-client-python"
-version = "1.0.4"
+version = "1.0.9"
 description = "Scrapely API client for Python"
 authors = [{ name = "TeraShift GmbH (Scrape.ly)" }]
 license = "Apache-2.0"

@@ -1,9 +1,13 @@
+# Derived from apify-client-python (Copyright Apify Technologies s.r.o., Apache-2.0).
+# Modified by TeraShift GmbH. See the LICENSE and NOTICE files.
 from .actor import ActorClient, ActorClientAsync
 from .actor_collection import ActorCollectionClient, ActorCollectionClientAsync
 from .actor_env_var import ActorEnvVarClient, ActorEnvVarClientAsync
 from .actor_env_var_collection import ActorEnvVarCollectionClient, ActorEnvVarCollectionClientAsync
 from .actor_version import ActorVersionClient, ActorVersionClientAsync
 from .actor_version_collection import ActorVersionCollectionClient, ActorVersionCollectionClientAsync
+from .automation import AutomationClient, AutomationClientAsync
+from .automation_collection import AutomationCollectionClient, AutomationCollectionClientAsync
 from .build import BuildClient, BuildClientAsync
 from .build_collection import BuildCollectionClient, BuildCollectionClientAsync
 from .dataset import DatasetClient, DatasetClientAsync
@@ -39,6 +43,10 @@ __all__ = [
     'ActorVersionClientAsync',
     'ActorVersionCollectionClient',
     'ActorVersionCollectionClientAsync',
+    'AutomationClient',
+    'AutomationClientAsync',
+    'AutomationCollectionClient',
+    'AutomationCollectionClientAsync',
     'BuildClient',
     'BuildClientAsync',
     'BuildCollectionClient',

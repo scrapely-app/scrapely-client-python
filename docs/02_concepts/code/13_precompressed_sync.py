@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/02_concepts/code/13_precompressed_sync.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 import gzip
 from pathlib import Path
 

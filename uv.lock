@@ -1365,7 +1365,7 @@ wheels = [
 
 [[package]]
 name = "scrapely-client-python"
-version = "1.0.4"
+version = "1.0.9"
 source = { editable = "." }
 dependencies = [
     { name = "colorama" },

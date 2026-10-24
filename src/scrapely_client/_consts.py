@@ -7,6 +7,9 @@ from datetime import timedelta
 DEFAULT_API_URL = 'https://api.scrape.ly'
 """Default base URL for the Scrapely API."""
 
+API_URL_ENV_VAR = 'SCRAPELY_API_URL'
+"""Environment variable that sets the API URL when `api_url` is not passed to the client."""
+
 API_VERSION = 'v2'
 """Current Scrapely API version."""
 

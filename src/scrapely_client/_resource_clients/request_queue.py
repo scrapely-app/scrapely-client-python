@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import math
+import re
 from collections.abc import Iterable
 from queue import Queue
 from typing import TYPE_CHECKING, Any, Literal
@@ -40,7 +41,7 @@ from scrapely_client._models import (
 from scrapely_client._pagination import DEFAULT_CHUNK_SIZE, get_cursor_iterator, get_cursor_iterator_async
 from scrapely_client._resource_clients._resource_client import ResourceClient, ResourceClientAsync
 from scrapely_client._utils.errors import catch_not_found_or_throw
-from scrapely_client._utils.http import response_to_dict
+from scrapely_client._utils.http import response_to_dict, to_path_segment
 from scrapely_client._utils.time import to_seconds
 from scrapely_client.errors import ApifyApiError
 
@@ -67,6 +68,32 @@ _MAX_PAYLOAD_SIZE_BYTES = 9 * 1024 * 1024
 
 _SAFETY_BUFFER_PERCENT = 0.01 / 100
 """Safety margin (0.01%) deducted from the maximum payload size when splitting requests into batches."""
+
+_REQUEST_ID_PATTERN = re.compile(r'[A-Za-z0-9_~-]{1,128}')
+"""Request ids the API accepts: letters, digits, `-`, `_` and `~`, at most 128 characters."""
+
+
+def _request_path(request_id: str, suffix: str = '') -> str:
+    """Build the path of one request, with the id percent-encoded as a single path segment.
+
+    Request ids can come from queue contents written by someone else. Unencoded, an id such as `..`,
+    `../../key-value-stores/<id>/records/INPUT` or `a?b` would point the authenticated call at another resource.
+    """
+    if not isinstance(request_id, str):
+        raise TypeError(f'Request id must be a string, not {type(request_id).__name__}.')
+    return f'requests/{to_path_segment(request_id)}{suffix}'
+
+
+def _stored_request_id(request: Request) -> str:
+    """Return the id of a request passed to `update_request`, after checking it against the API's id grammar."""
+    request_id = request.id
+    if request_id is None:
+        raise ValueError('The request has no id. update_request needs the id of a request stored in the queue.')
+    if not isinstance(request_id, str) or not _REQUEST_ID_PATTERN.fullmatch(request_id):
+        raise ValueError(
+            f'Invalid request id {request_id!r}: use 1-128 letters, digits, "-", "_" or "~", as returned by the API.'
+        )
+    return request_id
 
 
 def _serialize_requests(
@@ -270,7 +297,7 @@ class RequestQueueClient(ResourceClient):
         """
         try:
             response = self._http_client.call(
-                url=self._build_url(f'requests/{request_id}'),
+                url=self._build_url(_request_path(request_id)),
                 method='GET',
                 params=self._build_params(),
                 timeout=timeout,
@@ -303,11 +330,12 @@ class RequestQueueClient(ResourceClient):
         """
         if not isinstance(request, Request):
             request = Request.model_validate(request)
+        request_id = _stored_request_id(request)
 
         request_params = self._build_params(forefront=forefront, clientKey=self.client_key)
 
         response = self._http_client.call(
-            url=self._build_url(f'requests/{request.id}'),
+            url=self._build_url(_request_path(request_id)),
             method='PUT',
             json=request.model_dump(by_alias=True, exclude_none=True),
             params=request_params,
@@ -330,7 +358,7 @@ class RequestQueueClient(ResourceClient):
         )
 
         self._http_client.call(
-            url=self._build_url(f'requests/{request_id}'),
+            url=self._build_url(_request_path(request_id)),
             method='DELETE',
             params=request_params,
             timeout=timeout,
@@ -360,7 +388,7 @@ class RequestQueueClient(ResourceClient):
         )
 
         response = self._http_client.call(
-            url=self._build_url(f'requests/{request_id}/lock'),
+            url=self._build_url(_request_path(request_id, '/lock')),
             method='PUT',
             params=request_params,
             timeout=timeout,
@@ -387,7 +415,7 @@ class RequestQueueClient(ResourceClient):
         request_params = self._build_params(clientKey=self.client_key, forefront=forefront)
 
         self._http_client.call(
-            url=self._build_url(f'requests/{request_id}/lock'),
+            url=self._build_url(_request_path(request_id, '/lock')),
             method='DELETE',
             params=request_params,
             timeout=timeout,
@@ -781,7 +809,7 @@ class RequestQueueClientAsync(ResourceClientAsync):
         """
         try:
             response = await self._http_client.call(
-                url=self._build_url(f'requests/{request_id}'),
+                url=self._build_url(_request_path(request_id)),
                 method='GET',
                 params=self._build_params(),
                 timeout=timeout,
@@ -812,11 +840,12 @@ class RequestQueueClientAsync(ResourceClientAsync):
         """
         if not isinstance(request, Request):
             request = Request.model_validate(request)
+        request_id = _stored_request_id(request)
 
         request_params = self._build_params(forefront=forefront, clientKey=self.client_key)
 
         response = await self._http_client.call(
-            url=self._build_url(f'requests/{request.id}'),
+            url=self._build_url(_request_path(request_id)),
             method='PUT',
             json=request.model_dump(by_alias=True, exclude_none=True),
             params=request_params,
@@ -837,7 +866,7 @@ class RequestQueueClientAsync(ResourceClientAsync):
         request_params = self._build_params(clientKey=self.client_key)
 
         await self._http_client.call(
-            url=self._build_url(f'requests/{request_id}'),
+            url=self._build_url(_request_path(request_id)),
             method='DELETE',
             params=request_params,
             timeout=timeout,
@@ -867,7 +896,7 @@ class RequestQueueClientAsync(ResourceClientAsync):
         )
 
         response = await self._http_client.call(
-            url=self._build_url(f'requests/{request_id}/lock'),
+            url=self._build_url(_request_path(request_id, '/lock')),
             method='PUT',
             params=request_params,
             timeout=timeout,
@@ -894,7 +923,7 @@ class RequestQueueClientAsync(ResourceClientAsync):
         request_params = self._build_params(clientKey=self.client_key, forefront=forefront)
 
         await self._http_client.call(
-            url=self._build_url(f'requests/{request_id}/lock'),
+            url=self._build_url(_request_path(request_id, '/lock')),
             method='DELETE',
             params=request_params,
             timeout=timeout,

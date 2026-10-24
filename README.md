@@ -1,3 +1,5 @@
+<!-- Derived from apify-client-python (README.md), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH. -->
+
 <h1 align="center">Scrapely API client for Python</h1>
 
 <p align="center">
@@ -58,6 +60,8 @@
 ## Quick start
 
 You'll need a Scrapely API token — find yours in the integrations section of the Scrapely dashboard. Pass it to the client and you're ready to go.
+
+The client sends requests to `https://api.scrape.ly` unless you pass another API origin as `api_url`. When `api_url` is not given, the `SCRAPELY_API_URL` environment variable sets it (for example `SCRAPELY_API_URL=https://api-staging.scrape.ly`). `api_public_url`, used for public storage links, keeps its own argument and default. The client does not read the token from the environment.
 
 ### Synchronous client
 
@@ -155,6 +159,21 @@ for item in client.dataset('DATASET-ID').iterate_items(fields=['title', 'url']):
     process(item)
 ```
 
+### Create and run an automation
+
+```python
+automation = client.automations().create({
+    'title': 'Daily dentists',
+    'trigger': {'kind': 'schedule', 'cron': '0 9 * * *', 'timezone': 'Europe/Berlin'},
+    'steps': [{'kind': 'savedInput', 'savedInputId': 'SAVED-INPUT-ID'}],
+    'ai': {'mode': 'summarize', 'prompt': 'List the new practices with their phone numbers.'},
+    'deliveries': [{'channel': 'email'}],
+})
+run = client.automation(automation['id']).run()
+```
+
+Automations take and return the API's camelCase dictionaries (see the automations section of the API reference).
+
 ### Tune retries and timeouts
 
 ```python
@@ -200,7 +219,12 @@ The full documentation lives at **https://api.scrape.ly**.
 
 ## Contributing
 
-Bug reports and pull requests are welcome in the [issue tracker](https://github.com/scrapely-app/scrapely-client-python/issues).
+Bug reports, fixes, and improvements are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for the development setup, coding standards, testing, and the release process. The repo uses [uv](https://docs.astral.sh/uv/) for project management and [Poe the Poet](https://poethepoet.natn.io/) as a task runner; the typical loop is:
+
+```bash
+uv run poe install-dev   # install dev deps and git hooks
+uv run poe check-code    # lint, type-check, unit tests, docstring check
+```
 
 ## License
 

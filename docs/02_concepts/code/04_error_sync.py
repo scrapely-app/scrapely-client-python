@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/02_concepts/code/04_error_sync.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 from scrapely_client import ScrapelyClient
 from scrapely_client.errors import ScrapelyApiError, NotFoundError
 

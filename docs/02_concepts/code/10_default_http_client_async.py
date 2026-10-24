@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/02_concepts/code/10_default_http_client_async.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 from datetime import timedelta
 
 from scrapely_client import ScrapelyClientAsync

@@ -1,3 +1,4 @@
+# Derived from apify-client-python (docs/02_concepts/code/08_iterate_collection_async.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 from scrapely_client import ScrapelyClientAsync
 
 TOKEN = 'MY-SCRAPELY-TOKEN'

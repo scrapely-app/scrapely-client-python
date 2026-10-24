@@ -5,6 +5,8 @@ slug: /
 description: The official Python library to access the Scrapely API, with automatic retries, async support, and comprehensive API coverage.
 ---
 
+{/* Derived from apify-client-python (docs/01_introduction/index.mdx), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH. */}
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeBlock from '@theme/CodeBlock';
@@ -80,4 +82,4 @@ The following example shows how to run an Actor and retrieve its results:
     </TabItem>
 </Tabs>
 
-> You can find your API token in the [Integrations section](https://api.scrape.ly) of the Scrapely dashboard. See the [Quick start guide](./quick-start.mdx) for more details on authentication.
+> You can find your API token in the [Integrations section](https://api.scrape.ly) of the Scrapely dashboard. The client sends requests to `https://api.scrape.ly` unless you pass another API origin as `api_url` or set the `SCRAPELY_API_URL` environment variable (`api_url` wins). See the [Quick start guide](./quick-start.mdx) for more details on authentication.
