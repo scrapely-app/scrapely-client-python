@@ -17,7 +17,7 @@ async def main() -> None:
     for hashtag in HASHTAGS:
         scrapely_task = await scrapely_tasks_client.create(
             name=f'hashtags-{hashtag}',
-            actor_id='scrapely/instagram-hashtag-scraper',
+            actor_id='echofield/instagram-hashtag-scraper',
             task_input={'hashtags': [hashtag], 'resultsLimit': 20},
             memory_mbytes=1024,
         )

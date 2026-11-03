@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
+from uuid import uuid4
 
 from pydantic import TypeAdapter
 
@@ -287,7 +288,8 @@ class ActorClient(ResourceClient):
         response = self._http_client.call(
             url=self._build_url('runs'),
             method='POST',
-            headers={'content-type': content_type},
+            # The server starts one run per key, so a start resent after a 5xx or a dropped connection is safe.
+            headers={'content-type': content_type, 'idempotency-key': uuid4().hex},
             data=run_input,
             params=request_params,
             timeout=timeout,
@@ -418,6 +420,8 @@ class ActorClient(ResourceClient):
         response = self._http_client.call(
             url=self._build_url('builds'),
             method='POST',
+            # One build per key (same contract as run starts), so a resent build start is safe.
+            headers={'idempotency-key': uuid4().hex},
             params=request_params,
             timeout=timeout,
         )
@@ -783,7 +787,8 @@ class ActorClientAsync(ResourceClientAsync):
         response = await self._http_client.call(
             url=self._build_url('runs'),
             method='POST',
-            headers={'content-type': content_type},
+            # The server starts one run per key, so a start resent after a 5xx or a dropped connection is safe.
+            headers={'content-type': content_type, 'idempotency-key': uuid4().hex},
             data=run_input,
             params=request_params,
             timeout=timeout,
@@ -918,6 +923,8 @@ class ActorClientAsync(ResourceClientAsync):
         response = await self._http_client.call(
             url=self._build_url('builds'),
             method='POST',
+            # One build per key (same contract as run starts), so a resent build start is safe.
+            headers={'idempotency-key': uuid4().hex},
             params=request_params,
             timeout=timeout,
         )

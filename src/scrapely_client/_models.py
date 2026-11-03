@@ -1246,7 +1246,7 @@ class EffectivePlatformFeature(BaseModel):
         str | None,
         Field(
             examples=[
-                'The "Selected public Actors for developers" feature is not enabled for your account. Please upgrade your plan or contact support@scrape.ly'
+                'The "Selected public Actors for developers" feature is not enabled for your account. Please upgrade your plan or contact hello@scrape.ly'
             ]
         ),
     ]

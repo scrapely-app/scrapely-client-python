@@ -17,7 +17,7 @@ from scrapely_client._models import (
 )
 from scrapely_client._pagination import DEFAULT_CHUNK_SIZE, get_cursor_iterator, get_cursor_iterator_async
 from scrapely_client._resource_clients._resource_client import ResourceClient, ResourceClientAsync
-from scrapely_client._utils.crypto import create_hmac_signature, create_storage_content_signature
+from scrapely_client._utils.crypto import sign_storage_url
 from scrapely_client._utils.encoding import encode_key_value_store_record_value
 from scrapely_client._utils.errors import catch_not_found_or_throw
 from scrapely_client._utils.http import response_to_dict, to_path_segment
@@ -409,7 +409,7 @@ class KeyValueStoreClient(ResourceClient):
         """Generate a URL that can be used to access key-value store record.
 
         If the client has permission to access the key-value store's URL signing key, the URL will include a signature
-        to verify its authenticity.
+        to verify its authenticity. The signature expires in 1 hour.
 
         Args:
             key: The key for which the URL should be generated.
@@ -426,13 +426,19 @@ class KeyValueStoreClient(ResourceClient):
 
         metadata = self.get(timeout=timeout)
 
-        request_params = self._build_params()
+        public_url = self._build_public_url(record_path, self._build_params())
 
-        # The signature covers the raw key, which is what the API sees once it decodes the path segment.
+        # The signature binds the raw key, which is what the API sees once it decodes the path segment.
+        # It expires in 1 hour.
         if metadata and metadata.url_signing_secret_key:
-            request_params['signature'] = create_hmac_signature(metadata.url_signing_secret_key, key)
+            public_url = sign_storage_url(
+                public_url,
+                metadata.id,
+                metadata.url_signing_secret_key,
+                record_key=key,
+            )
 
-        return self._build_public_url(record_path, request_params)
+        return public_url
 
     def create_keys_public_url(
         self,
@@ -451,7 +457,8 @@ class KeyValueStoreClient(ResourceClient):
 
         You can optionally control how long the signed URL should be valid using the `expires_in` option.
         This value sets the expiration duration from the time the URL is generated.
-        If not provided, the URL will not expire.
+        If not provided, the URL expires in 1 hour. The signature covers the query parameters, so the URL stops
+        working if any of them is changed.
 
         Any other options (like `limit` or `prefix`) will be included as query parameters in the URL.
 
@@ -460,7 +467,7 @@ class KeyValueStoreClient(ResourceClient):
             exclusive_start_key: All keys up to this one (including) are skipped from the result.
             collection: The name of the collection in store schema to list keys from.
             prefix: The prefix of the keys to be listed.
-            expires_in: How long the signed URL should be valid from the time it is generated.
+            expires_in: How long the signed URL should be valid from the time it is generated. Defaults to 1 hour.
             timeout: Timeout for the API HTTP request.
 
         Returns:
@@ -475,15 +482,18 @@ class KeyValueStoreClient(ResourceClient):
             prefix=prefix,
         )
 
+        public_url = self._build_public_url('keys', request_params)
+
+        # Signed last: the signature binds every query parameter above.
         if metadata and metadata.url_signing_secret_key:
-            signature = create_storage_content_signature(
+            public_url = sign_storage_url(
+                public_url,
                 metadata.id,
                 metadata.url_signing_secret_key,
                 expires_in=expires_in,
             )
-            request_params['signature'] = signature
 
-        return self._build_public_url('keys', request_params)
+        return public_url
 
 
 @docs_group('Resource clients')
@@ -831,7 +841,7 @@ class KeyValueStoreClientAsync(ResourceClientAsync):
         """Generate a URL that can be used to access key-value store record.
 
         If the client has permission to access the key-value store's URL signing key, the URL will include a signature
-        to verify its authenticity.
+        to verify its authenticity. The signature expires in 1 hour.
 
         Args:
             key: The key for which the URL should be generated.
@@ -848,13 +858,19 @@ class KeyValueStoreClientAsync(ResourceClientAsync):
 
         metadata = await self.get(timeout=timeout)
 
-        request_params = self._build_params()
+        public_url = self._build_public_url(record_path, self._build_params())
 
-        # The signature covers the raw key, which is what the API sees once it decodes the path segment.
+        # The signature binds the raw key, which is what the API sees once it decodes the path segment.
+        # It expires in 1 hour.
         if metadata and metadata.url_signing_secret_key:
-            request_params['signature'] = create_hmac_signature(metadata.url_signing_secret_key, key)
+            public_url = sign_storage_url(
+                public_url,
+                metadata.id,
+                metadata.url_signing_secret_key,
+                record_key=key,
+            )
 
-        return self._build_public_url(record_path, request_params)
+        return public_url
 
     async def create_keys_public_url(
         self,
@@ -873,7 +889,8 @@ class KeyValueStoreClientAsync(ResourceClientAsync):
 
         You can optionally control how long the signed URL should be valid using the `expires_in` option.
         This value sets the expiration duration from the time the URL is generated.
-        If not provided, the URL will not expire.
+        If not provided, the URL expires in 1 hour. The signature covers the query parameters, so the URL stops
+        working if any of them is changed.
 
         Any other options (like `limit` or `prefix`) will be included as query parameters in the URL.
 
@@ -882,7 +899,7 @@ class KeyValueStoreClientAsync(ResourceClientAsync):
             exclusive_start_key: All keys up to this one (including) are skipped from the result.
             collection: The name of the collection in store schema to list keys from.
             prefix: The prefix of the keys to be listed.
-            expires_in: How long the signed URL should be valid from the time it is generated.
+            expires_in: How long the signed URL should be valid from the time it is generated. Defaults to 1 hour.
             timeout: Timeout for the API HTTP request.
 
         Returns:
@@ -897,12 +914,15 @@ class KeyValueStoreClientAsync(ResourceClientAsync):
             prefix=prefix,
         )
 
+        public_url = self._build_public_url('keys', request_params)
+
+        # Signed last: the signature binds every query parameter above.
         if metadata and metadata.url_signing_secret_key:
-            signature = create_storage_content_signature(
+            public_url = sign_storage_url(
+                public_url,
                 metadata.id,
                 metadata.url_signing_secret_key,
                 expires_in=expires_in,
             )
-            request_params['signature'] = signature
 
-        return self._build_public_url('keys', request_params)
+        return public_url

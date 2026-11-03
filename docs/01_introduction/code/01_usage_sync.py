@@ -1,7 +1,7 @@
 # Derived from apify-client-python (docs/01_introduction/code/01_usage_sync.py), Copyright Apify Technologies s.r.o., Apache License 2.0. Modified by TeraShift GmbH.
 from scrapely_client import ScrapelyClient
 
-# You can find your API token at https://api.scrape.ly
+# Create an API token in the Scrapely dashboard under Settings > API & Integrations.
 TOKEN = 'MY-SCRAPELY-TOKEN'
 
 

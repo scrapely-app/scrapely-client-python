@@ -63,4 +63,4 @@ A `timedelta` longer than `timeout_max` is capped at `timeout_max`, and the clie
 
 ## Interaction with retries
 
-Timeouts work together with the [retry system](/api/client/python/docs/concepts/retries). When a request times out, it counts as a failed attempt and triggers a retry (up to `max_retries`). The timeout applies to each individual attempt, not the total time across all retries.
+Timeouts work together with the [retry system](./05_retries.mdx). When a request times out, it counts as a failed attempt and triggers a retry (up to `max_retries`). The timeout applies to each individual attempt, not the total time across all retries.

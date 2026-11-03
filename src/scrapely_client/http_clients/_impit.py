@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import re
 import time
 from contextlib import suppress
 from datetime import timedelta
@@ -65,6 +66,50 @@ def _is_retryable_error(exc: Exception) -> bool:
     not here.
     """
     return isinstance(exc, impit.HTTPError) and not isinstance(exc, _PERMANENT_ERRORS)
+
+
+# Failures that happen before the request reaches the server, so resending can't apply it twice.
+_NOT_SENT_ERRORS = (impit.ConnectError, impit.ConnectTimeout, impit.PoolTimeout)
+
+
+# POSTs that are safe to resend without a key: request queue adds (the queue keeps one request per uniqueKey),
+# unlocks and aborts (repeating them changes nothing) and head locks (a repeat only locks more requests until the
+# lock expires). A run's default queue is also reached as /actor-runs/<id>/request-queue.
+_SAFE_TO_RESEND_POST_PATH_RE = re.compile(
+    r'/(?:request-queues/[^/]+|actor-runs/[^/]+/request-queue)/(?:requests(?:/batch|/unlock)?|head/lock)/?$|/abort/?$'
+)
+
+# Get-or-create of a storage by name: a resend finds the storage the first request made.
+_STORAGE_COLLECTION_PATH_RE = re.compile(r'/(?:datasets|key-value-stores|request-queues)/?$')
+
+# Answers from the proxy in front of the API when the API did not take the request (e.g. restarting during a deploy),
+# so resending can't apply it twice.
+_NOT_APPLIED_STATUS_CODES = frozenset({HTTPStatus.BAD_GATEWAY, HTTPStatus.SERVICE_UNAVAILABLE})
+
+# Keyed requests: the first request with the key is still being applied, so a resend gets its answer shortly.
+_KEY_IN_PROGRESS_ERROR_TYPE = 'idempotency-key-in-progress'
+# Keyed requests: the server can't tell whether the first request was applied, and no resend changes that.
+_OUTCOME_UNKNOWN_ERROR_TYPE = 'push-outcome-unknown'
+
+
+def _is_unsafe_to_resend(method: str, url: str, headers: dict[str, str], params: dict[str, Any] | None = None) -> bool:
+    """Check if resending the request after an ambiguous failure could apply it twice.
+
+    A POST or PATCH without an `Idempotency-Key` header may already have been applied when the server answers 5xx or
+    the connection drops mid-request, e.g. a dataset push stored twice or a second run started. Request queue adds,
+    unlocks, head locks and aborts are always safe (see `_SAFE_TO_RESEND_POST_PATH_RE`), and so is a named storage's
+    get-or-create (see `_STORAGE_COLLECTION_PATH_RE`).
+    """
+    path = url.split('?', maxsplit=1)[0]
+    if method.upper() not in ('POST', 'PATCH') or _SAFE_TO_RESEND_POST_PATH_RE.search(path):
+        return False
+    if method.upper() == 'POST' and _STORAGE_COLLECTION_PATH_RE.search(path) and (params or {}).get('name'):
+        return False
+    return not _has_idempotency_key(headers)
+
+
+def _has_idempotency_key(headers: dict[str, str]) -> bool:
+    return any(name.lower() == 'idempotency-key' for name in headers)
 
 
 @docs_group('HTTP clients')
@@ -249,15 +294,31 @@ class ImpitHttpClient(HttpClient):
             if not _is_retryable_error(exc):
                 logger.debug('Exception is not retryable', exc_info=exc)
                 stop_retrying()
+            elif _is_unsafe_to_resend(method, url, headers, params) and not isinstance(exc, _NOT_SENT_ERRORS):
+                logger.debug('Request may have been applied; not resending without an idempotency key', exc_info=exc)
+                stop_retrying()
             raise
 
-        # Retry only server errors (5xx) and rate limits (429).
+        # Retry only server errors (502/503, other 5xx when resending is safe), rate limits (429) and a keyed
+        # request's 409 while the first request with that key is still being applied (decided by the error type below).
         logger.debug('Request unsuccessful', extra={'status_code': response.status_code})
+        keyed_conflict = response.status_code == HTTPStatus.CONFLICT and _has_idempotency_key(headers)
         if (
             response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
             and response.status_code != HTTPStatus.TOO_MANY_REQUESTS
+            and not keyed_conflict
         ):
             logger.debug('Status code is not retryable', extra={'status_code': response.status_code})
+            stop_retrying()
+        elif (
+            response.status_code != HTTPStatus.TOO_MANY_REQUESTS
+            and response.status_code not in _NOT_APPLIED_STATUS_CODES
+            and _is_unsafe_to_resend(method, url, headers, params)
+        ):
+            logger.debug(
+                'Request may have been applied; not resending without an idempotency key',
+                extra={'status_code': response.status_code},
+            )
             stop_retrying()
 
         # Read the response in case it is a stream, so we can raise the error properly. A failed read goes through
@@ -273,7 +334,11 @@ class ImpitHttpClient(HttpClient):
                 stop_retrying()
             raise
 
-        raise ApifyApiError(response, attempt, method=method)
+        error = ApifyApiError(response, attempt, method=method)
+        if (keyed_conflict and error.type != _KEY_IN_PROGRESS_ERROR_TYPE) or error.type == _OUTCOME_UNKNOWN_ERROR_TYPE:
+            logger.debug('Error type is not retryable', extra={'status_code': response.status_code})
+            stop_retrying()
+        raise error
 
     @staticmethod
     def _retry_with_exp_backoff(
@@ -522,15 +587,31 @@ class ImpitHttpClientAsync(HttpClientAsync):
             if not _is_retryable_error(exc):
                 logger.debug('Exception is not retryable', exc_info=exc)
                 stop_retrying()
+            elif _is_unsafe_to_resend(method, url, headers, params) and not isinstance(exc, _NOT_SENT_ERRORS):
+                logger.debug('Request may have been applied; not resending without an idempotency key', exc_info=exc)
+                stop_retrying()
             raise
 
-        # Retry only server errors (5xx) and rate limits (429).
+        # Retry only server errors (502/503, other 5xx when resending is safe), rate limits (429) and a keyed
+        # request's 409 while the first request with that key is still being applied (decided by the error type below).
         logger.debug('Request unsuccessful', extra={'status_code': response.status_code})
+        keyed_conflict = response.status_code == HTTPStatus.CONFLICT and _has_idempotency_key(headers)
         if (
             response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
             and response.status_code != HTTPStatus.TOO_MANY_REQUESTS
+            and not keyed_conflict
         ):
             logger.debug('Status code is not retryable', extra={'status_code': response.status_code})
+            stop_retrying()
+        elif (
+            response.status_code != HTTPStatus.TOO_MANY_REQUESTS
+            and response.status_code not in _NOT_APPLIED_STATUS_CODES
+            and _is_unsafe_to_resend(method, url, headers, params)
+        ):
+            logger.debug(
+                'Request may have been applied; not resending without an idempotency key',
+                extra={'status_code': response.status_code},
+            )
             stop_retrying()
 
         # Read the response in case it is a stream, so we can raise the error properly. A failed read goes through
@@ -546,7 +627,11 @@ class ImpitHttpClientAsync(HttpClientAsync):
                 stop_retrying()
             raise
 
-        raise ApifyApiError(response, attempt, method=method)
+        error = ApifyApiError(response, attempt, method=method)
+        if (keyed_conflict and error.type != _KEY_IN_PROGRESS_ERROR_TYPE) or error.type == _OUTCOME_UNKNOWN_ERROR_TYPE:
+            logger.debug('Error type is not retryable', extra={'status_code': response.status_code})
+            stop_retrying()
+        raise error
 
     @staticmethod
     async def _retry_with_exp_backoff(

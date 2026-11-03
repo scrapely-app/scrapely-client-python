@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.10] - 2026-11-02
+
+- Run starts (`ActorClient.start` / `call`, `TaskClient.start` / `call`), `ActorClient.build` and `DatasetClient.push_items` send an `Idempotency-Key` header, so a request resent after a 5xx or a dropped connection starts one run or build and stores the items once.
+- Any other POST or PATCH without an `Idempotency-Key` is no longer resent after a 5xx or a connection that dropped mid-request, since it may already have been applied. Rate limits (429), failures before the request was sent, request queue adds (de-duplicated by `uniqueKey`), request unlocks, head locks, run aborts and get-or-create of a storage by name are still retried.
+- A keyed request answered with 409 `idempotency-key-in-progress` (the first request with that key is still being applied) is resent until it gets that request's answer; a 503 `push-outcome-unknown` is not resent, since no resend can change it.
+
 ## [1.0.9] - 2026-10-24
 
 - The `SCRAPELY_API_URL` environment variable sets the API URL when `api_url` is not passed to `ScrapelyClient`, `ScrapelyClientAsync` or `with_custom_http_client`; `api_url` still wins, and without either the client uses `https://api.scrape.ly`. An empty value is ignored. `api_public_url` is unchanged.

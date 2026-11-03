@@ -3,7 +3,7 @@
 <h1 align="center">Scrapely API client for Python</h1>
 
 <p align="center">
-  <strong>The official Python client for the <a href="https://api.scrape.ly">Scrapely REST API</a>.</strong>
+  <strong>The official Python client for the <a href="https://scrape.ly/docs/api">Scrapely REST API</a>.</strong>
 </p>
 
 <p align="center">
@@ -13,9 +13,9 @@
   <a href="./LICENSE"><img src="https://img.shields.io/pypi/l/scrapely-client-python" alt="License"></a>
 </p>
 
-`scrapely-client-python` lets you talk to the [Scrapely platform](https://api.scrape.ly) from Python — run Actors, manage storages (datasets, key-value stores, request queues), schedule tasks, configure webhooks, and use everything else exposed by the Scrapely API. It ships both synchronous and asynchronous clients, fully typed responses, automatic retries with exponential backoff, tiered timeouts, pagination helpers, streaming, and a pluggable HTTP layer.
+`scrapely-client-python` lets you talk to the [Scrapely platform](https://scrape.ly) from Python — run Actors, manage storages (datasets, key-value stores, request queues), schedule tasks, configure webhooks, and use everything else exposed by the Scrapely API. It ships both synchronous and asynchronous clients, fully typed responses, automatic retries with exponential backoff, tiered timeouts, pagination helpers, streaming, and a pluggable HTTP layer.
 
-> If you want to **build** Actors in Python rather than consume the API, use the Scrapely SDK for Python instead — it bundles this client and adds Actor-side primitives.
+> If you want to **build** Actors in Python rather than consume the API, use the [Scrapely SDK for Python](https://scrape.ly/docs/sdk-python) (`scrapely-python`) instead — it bundles this client and adds Actor-side primitives.
 
 ## Table of contents
 
@@ -59,7 +59,7 @@
 
 ## Quick start
 
-You'll need a Scrapely API token — find yours in the integrations section of the Scrapely dashboard. Pass it to the client and you're ready to go.
+You'll need a Scrapely API token — create one in the dashboard under **Settings → API & Integrations** (see [API keys](https://scrape.ly/docs/api-keys)). Pass it to the client and you're ready to go.
 
 The client sends requests to `https://api.scrape.ly` unless you pass another API origin as `api_url`. When `api_url` is not given, the `SCRAPELY_API_URL` environment variable sets it (for example `SCRAPELY_API_URL=https://api-staging.scrape.ly`). `api_public_url`, used for public storage links, keeps its own argument and default. The client does not read the token from the environment.
 
@@ -189,33 +189,33 @@ client = ScrapelyClient(
 )
 ```
 
-For end-to-end recipes — passing input, managing tasks for reusable input, retrieving and merging Actor data, integrating with Pandas, plugging in a custom HTTP client — see the Guides.
+For end-to-end recipes — passing input, managing tasks for reusable input, retrieving and merging Actor data, integrating with Pandas, plugging in a custom HTTP client — see the [guides](https://github.com/scrapely-app/scrapely-client-python/tree/main/docs/03_guides).
 
 ## Documentation
 
-The full documentation lives at **https://api.scrape.ly**.
+The client guide lives at **https://scrape.ly/docs/client-python**, and the REST API it wraps is described in the [API reference](https://scrape.ly/docs/api).
+
+The [`docs/`](https://github.com/scrapely-app/scrapely-client-python/tree/main/docs) folder of the repository has more detail:
 
 | Section | What you'll find |
 | --- | --- |
-| Introduction | Overview, prerequisites, and a tour of the client. |
-| Quick start | Authenticate, run an Actor, and fetch its results step by step. |
-| Concepts | Asyncio, single vs. collection clients, nested clients, error handling, retries, logging, convenience methods, pagination, streaming, custom HTTP clients, timeouts. |
-| Guides | Pass input to an Actor, manage tasks for reusable input, retrieve Actor data, integrate with data libraries (e.g. Pandas), use HTTPX as the HTTP client. |
-| API reference | Generated reference for every class, method, and model. |
-| Changelog | Release history and breaking changes. |
+| [Introduction](https://github.com/scrapely-app/scrapely-client-python/tree/main/docs/01_introduction) | Overview, installation, and a quick start: authenticate, run an Actor, and fetch its results. |
+| [Concepts](https://github.com/scrapely-app/scrapely-client-python/tree/main/docs/02_concepts) | Asyncio, single vs. collection clients, nested clients, error handling, retries, logging, convenience methods, pagination, streaming, custom HTTP clients, timeouts, typed models, HTTP compression. |
+| [Guides](https://github.com/scrapely-app/scrapely-client-python/tree/main/docs/03_guides) | Pass input to an Actor, manage tasks for reusable input, retrieve Actor data, integrate with data libraries (e.g. Pandas), use HTTPX as the HTTP client. |
+| [Changelog](https://github.com/scrapely-app/scrapely-client-python/blob/main/CHANGELOG.md) | Release history and breaking changes. |
 
 ## Related projects
 
-- **Scrapely SDK for Python** — toolkit for **building** Actors in Python (this client is bundled with it).
+- **[Scrapely SDK for Python](https://scrape.ly/docs/sdk-python)** (`scrapely-python`) — toolkit for **building** Actors in Python (this client is bundled with it).
 - **[Crawlee for Python](https://crawlee.dev/python)** — high-level web scraping and browser automation framework that powers many Actors.
-- **Scrapely API client for JavaScript / TypeScript** — equivalent Scrapely API client for Node.js.
-- **Scrapely SDK for JavaScript / TypeScript** — equivalent Scrapely SDK for Node.js.
+- **[Scrapely API client for JavaScript / TypeScript](https://scrape.ly/docs/client-js)** — equivalent Scrapely API client for Node.js.
+- **[Scrapely SDK for JavaScript / TypeScript](https://scrape.ly/docs/sdk-node)** — equivalent Scrapely SDK for Node.js.
 - **[Crawlee for JavaScript / TypeScript](https://crawlee.dev)** — the Node.js implementation of the Crawlee framework.
-- **Scrapely CLI** — command-line tool for interacting with the Scrapely platform: managing Actors, runs, storages, local development, and deployment.
+- **[Scrapely CLI](https://scrape.ly/docs/cli)** — command-line tool for interacting with the Scrapely platform: managing Actors, runs, storages, local development, and deployment.
 
 ## Support and community
 
-- **GitHub issues** — report a bug or request a feature in the repository's issue tracker.
+- **GitHub issues** — report a bug or request a feature in the [issue tracker](https://github.com/scrapely-app/scrapely-client-python/issues).
 
 ## Contributing
 

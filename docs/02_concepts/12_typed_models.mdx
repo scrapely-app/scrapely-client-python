@@ -107,13 +107,11 @@ Generated models are configured with `extra='allow'`. Any new fields the API sta
 
 ## Browsing all models
 
-The full list of generated models and TypedDicts is available in the [API reference](/api/client/python/reference) under the **Models** and **Typed dicts** groups.
+The generated models and TypedDicts are defined in `scrapely_client/_models.py` and `scrapely_client/_typeddicts.py`.
 
 ## Methods that return plain types
 
 A few endpoints intentionally return plain Python types instead of Pydantic models because their payloads are user-defined or inherently unstructured:
 
-- <ApiLink to="class/DatasetClient#list_items">`DatasetClient.list_items()`</ApiLink> returns a <ApiLink to="class/DatasetItemsPage">`DatasetItemsPage`</ApiLink> whose `items` field is `list[dict[str, Any]]`. Dataset items follow the [Actor output schema](https://api.scrape.ly/platform/actors/development/actor-definition/output-schema), which the client cannot know in advance.
+- <ApiLink to="class/DatasetClient#list_items">`DatasetClient.list_items()`</ApiLink> returns a <ApiLink to="class/DatasetItemsPage">`DatasetItemsPage`</ApiLink> whose `items` field is `list[dict[str, Any]]`. Dataset items follow the [Actor output schema](https://scrape.ly/docs/actors#output-schema), which the client cannot know in advance.
 - <ApiLink to="class/KeyValueStoreClient#get_record">`KeyValueStoreClient.get_record()`</ApiLink> returns a `dict` with `key`, `value`, and `content_type` keys. The shape of `value` is determined by the record's content type.
-
-For background on the migration from plain dicts to typed models, see [Upgrading to v3](../04_upgrading/upgrading_to_v3.mdx).

@@ -14,11 +14,11 @@ import CodeBlock from '@theme/CodeBlock';
 import CustomHttpClientAsyncExample from '!!raw-loader!./code/05_custom_http_client_async.py';
 import CustomHttpClientSyncExample from '!!raw-loader!./code/05_custom_http_client_sync.py';
 
-This guide shows how to replace the default <ApiLink to="class/ImpitHttpClient">`ImpitHttpClient`</ApiLink> and <ApiLink to="class/ImpitHttpClientAsync">`ImpitHttpClientAsync`</ApiLink> with one based on [HTTPX](https://www.python-httpx.org/). The same approach works for any HTTP library — see [Custom HTTP clients](/api/client/python/docs/concepts/custom-http-clients) for the underlying architecture.
+This guide shows how to replace the default <ApiLink to="class/ImpitHttpClient">`ImpitHttpClient`</ApiLink> and <ApiLink to="class/ImpitHttpClientAsync">`ImpitHttpClientAsync`</ApiLink> with one based on [HTTPX](https://www.python-httpx.org/). The same approach works for any HTTP library — see [Custom HTTP clients](../02_concepts/10_custom_http_clients.mdx) for the underlying architecture.
 
 ## Why HTTPX?
 
-You might want to use [HTTPX](https://www.python-httpx.org/) instead of the default [Impit](https://impit.dev)-based client for reasons like:
+You might want to use [HTTPX](https://www.python-httpx.org/) instead of the default [Impit](https://pypi.org/project/impit/)-based client for reasons like:
 
 - You already use HTTPX in your project and want a single HTTP stack.
 - You need HTTPX-specific features.

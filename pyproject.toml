@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "scrapely-client-python"
-version = "1.0.9"
+version = "1.0.10"
 description = "Scrapely API client for Python"
 authors = [{ name = "TeraShift GmbH (Scrape.ly)" }]
 license = "Apache-2.0"
@@ -224,7 +224,7 @@ crawlee = false
 clean = "rm -rf .coverage .pytest_cache .ruff_cache .ty_cache build dist htmlcov"
 install-sync = "uv sync --all-extras"
 build = "uv build"
-publish-to-pypi = "uv publish --token ${SCRAPELY_PYPI_TOKEN}"
+publish-to-pypi = { cmd = "uv publish", env = { UV_PUBLISH_TOKEN = "${SCRAPELY_PYPI_TOKEN}" } }
 type-check = "uv run ty check"
 unit-tests = "uv run pytest --numprocesses=${TESTS_CONCURRENCY:-auto} tests/unit"
 unit-tests-cov = "uv run pytest --numprocesses=${TESTS_CONCURRENCY:-auto} --cov=src/scrapely_client --cov-report=xml:coverage-unit.xml tests/unit"

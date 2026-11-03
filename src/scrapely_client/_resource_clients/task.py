@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 from scrapely_client._docs import docs_group
 from scrapely_client._models import (
@@ -272,7 +273,8 @@ class TaskClient(ResourceClient):
         response = self._http_client.call(
             url=self._build_url('runs'),
             method='POST',
-            headers={'content-type': 'application/json; charset=utf-8'},
+            # The server starts one run per key, so a start resent after a 5xx or a dropped connection is safe.
+            headers={'content-type': 'application/json; charset=utf-8', 'idempotency-key': uuid4().hex},
             json=task_input.model_dump() if task_input is not None else None,
             params=request_params,
             timeout=timeout,
@@ -652,7 +654,8 @@ class TaskClientAsync(ResourceClientAsync):
         response = await self._http_client.call(
             url=self._build_url('runs'),
             method='POST',
-            headers={'content-type': 'application/json; charset=utf-8'},
+            # The server starts one run per key, so a start resent after a 5xx or a dropped connection is safe.
+            headers={'content-type': 'application/json; charset=utf-8', 'idempotency-key': uuid4().hex},
             json=task_input.model_dump() if task_input is not None else None,
             params=request_params,
             timeout=timeout,

@@ -5,13 +5,15 @@ from __future__ import annotations
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 from scrapely_client._docs import docs_group
 from scrapely_client._models import Dataset, DatasetResponse, DatasetStatistics, DatasetStatisticsResponse
 from scrapely_client._pagination import DEFAULT_CHUNK_SIZE, get_items_iterator, get_items_iterator_async
 from scrapely_client._resource_clients._resource_client import ResourceClient, ResourceClientAsync
-from scrapely_client._utils.crypto import create_storage_content_signature
+from scrapely_client._utils.crypto import sign_storage_url
 from scrapely_client._utils.http import response_to_dict, response_to_list
+from scrapely_client.errors import ApifyApiError
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
@@ -495,15 +497,26 @@ class DatasetClient(ResourceClient):
         else:
             json = items
 
-        self._http_client.call(
-            url=self._build_url('items'),
-            method='POST',
-            headers={'content-type': 'application/json; charset=utf-8'},
-            params=self._build_params(),
-            data=data,
-            json=json,
-            timeout=timeout,
-        )
+        for resend in (False, True):
+            try:
+                self._http_client.call(
+                    url=self._build_url('items'),
+                    method='POST',
+                    # The server stores a push once per key, so a push resent after a 5xx or a dropped connection
+                    # is safe.
+                    headers={'content-type': 'application/json; charset=utf-8', 'idempotency-key': uuid4().hex},
+                    params=self._build_params(),
+                    data=data,
+                    json=json,
+                    timeout=timeout,
+                )
+            except ApifyApiError as exc:
+                # The push failed mid-write and the server can't tell whether it was stored. Send it once more under
+                # a new key, as an unkeyed push would be resent: a second copy is possible, losing the items is not.
+                if resend or exc.type != 'push-outcome-unknown':
+                    raise
+            else:
+                return
 
     def get_statistics(self, *, timeout: Timeout = 'short') -> DatasetStatistics:
         """Get the dataset statistics.
@@ -551,7 +564,8 @@ class DatasetClient(ResourceClient):
 
         You can optionally control how long the signed URL should be valid using the `expires_in` option.
         This value sets the expiration duration from the time the URL is generated.
-        If not provided, the URL will not expire.
+        If not provided, the URL expires in 1 hour. The signature covers the query parameters, so the URL stops
+        working if any of them is changed.
 
         Any other options (like `limit` or `offset`) will be included as query parameters in the URL.
 
@@ -568,7 +582,7 @@ class DatasetClient(ResourceClient):
             skip_hidden: If True, then hidden fields are skipped from the output.
             flatten: A list of fields that should be flattened.
             view: Name of the dataset view to be used.
-            expires_in: How long the signed URL should be valid.
+            expires_in: How long the signed URL should be valid. Defaults to 1 hour.
             timeout: Timeout for the API HTTP request.
 
         Returns:
@@ -590,15 +604,18 @@ class DatasetClient(ResourceClient):
             view=view,
         )
 
+        public_url = self._build_public_url('items', request_params)
+
+        # Signed last: the signature binds every query parameter above.
         if dataset and dataset.url_signing_secret_key:
-            signature = create_storage_content_signature(
+            public_url = sign_storage_url(
+                public_url,
                 dataset.id,
                 dataset.url_signing_secret_key,
                 expires_in=expires_in,
             )
-            request_params['signature'] = signature
 
-        return self._build_public_url('items', request_params)
+        return public_url
 
 
 @docs_group('Resource clients')
@@ -1047,15 +1064,26 @@ class DatasetClientAsync(ResourceClientAsync):
         else:
             json = items
 
-        await self._http_client.call(
-            url=self._build_url('items'),
-            method='POST',
-            headers={'content-type': 'application/json; charset=utf-8'},
-            params=self._build_params(),
-            data=data,
-            json=json,
-            timeout=timeout,
-        )
+        for resend in (False, True):
+            try:
+                await self._http_client.call(
+                    url=self._build_url('items'),
+                    method='POST',
+                    # The server stores a push once per key, so a push resent after a 5xx or a dropped connection
+                    # is safe.
+                    headers={'content-type': 'application/json; charset=utf-8', 'idempotency-key': uuid4().hex},
+                    params=self._build_params(),
+                    data=data,
+                    json=json,
+                    timeout=timeout,
+                )
+            except ApifyApiError as exc:
+                # The push failed mid-write and the server can't tell whether it was stored. Send it once more under
+                # a new key, as an unkeyed push would be resent: a second copy is possible, losing the items is not.
+                if resend or exc.type != 'push-outcome-unknown':
+                    raise
+            else:
+                return
 
     async def get_statistics(self, *, timeout: Timeout = 'short') -> DatasetStatistics:
         """Get the dataset statistics.
@@ -1103,7 +1131,8 @@ class DatasetClientAsync(ResourceClientAsync):
 
         You can optionally control how long the signed URL should be valid using the `expires_in` option.
         This value sets the expiration duration from the time the URL is generated.
-        If not provided, the URL will not expire.
+        If not provided, the URL expires in 1 hour. The signature covers the query parameters, so the URL stops
+        working if any of them is changed.
 
         Any other options (like `limit` or `offset`) will be included as query parameters in the URL.
 
@@ -1120,7 +1149,7 @@ class DatasetClientAsync(ResourceClientAsync):
             skip_hidden: If True, then hidden fields are skipped from the output.
             flatten: A list of fields that should be flattened.
             view: Name of the dataset view to be used.
-            expires_in: How long the signed URL should be valid.
+            expires_in: How long the signed URL should be valid. Defaults to 1 hour.
             timeout: Timeout for the API HTTP request.
 
         Returns:
@@ -1142,12 +1171,15 @@ class DatasetClientAsync(ResourceClientAsync):
             view=view,
         )
 
+        public_url = self._build_public_url('items', request_params)
+
+        # Signed last: the signature binds every query parameter above.
         if dataset and dataset.url_signing_secret_key:
-            signature = create_storage_content_signature(
+            public_url = sign_storage_url(
+                public_url,
                 dataset.id,
                 dataset.url_signing_secret_key,
                 expires_in=expires_in,
             )
-            request_params['signature'] = signature
 
-        return self._build_public_url('items', request_params)
+        return public_url

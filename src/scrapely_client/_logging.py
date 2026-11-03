@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
+import re
 import threading
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, NamedTuple
@@ -24,6 +25,9 @@ logger_name = __name__.split('.')[0]
 
 logger = logging.getLogger(logger_name)
 """Logger used throughout the library."""
+
+# C0 controls except tab and newline, DEL, and C1 controls (incl. 8-bit CSI).
+_CONTROL_CHARS_RE = re.compile(r'[\x00-\x08\x0b-\x1f\x7f-\x9f]')
 
 
 class LogContext(NamedTuple):
@@ -101,9 +105,11 @@ class RedirectLogFormatter(logging.Formatter):
         Returns:
             Formatted log message with colored logger name prefix.
         """
-        formatted_logger_name = f'{Fore.CYAN}[{record.name}]{Style.RESET_ALL}'
-        formatted_message = super().format(record)
-        return f'{formatted_logger_name} -> {formatted_message}'
+        formatted_logger_name = f'{Fore.CYAN}[{_CONTROL_CHARS_RE.sub("", record.name)}]{Style.RESET_ALL}'
+        # Redirected messages come from another Actor's log, so escape sequences in it are removed
+        # and every line gets the prefix, so a line in it can't pass for one of our own.
+        formatted_message = _CONTROL_CHARS_RE.sub('', super().format(record).replace('\r\n', '\n').replace('\r', '\n'))
+        return '\n'.join(f'{formatted_logger_name} -> {msg_line}' for msg_line in formatted_message.split('\n'))
 
 
 def create_redirect_logger(name: str) -> logging.Logger:

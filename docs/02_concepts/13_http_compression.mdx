@@ -82,7 +82,7 @@ from scrapely_client import ScrapelyClient
 # Default: gzip, no extra dependency required
 client = ScrapelyClient(token='MY-SCRAPELY-TOKEN')
 
-# Opt in to brotli (requires scrapely-client[brotli])
+# Opt in to brotli (requires scrapely-client-python[brotli])
 client = ScrapelyClient(token='MY-SCRAPELY-TOKEN', compression='brotli')
 ```
 
@@ -91,9 +91,9 @@ client = ScrapelyClient(token='MY-SCRAPELY-TOKEN', compression='brotli')
 Brotli is available as an optional extra. Install it alongside the client:
 
 ```bash
-pip install "scrapely-client[brotli]"
+pip install "scrapely-client-python[brotli]"
 # or
-uv add "scrapely-client[brotli]"
+uv add "scrapely-client-python[brotli]"
 ```
 
 Then pass `compression='brotli'` to the client constructor. If you request brotli without installing the extra, the client raises a clear `ImportError`. There is no silent fallback.

@@ -19,7 +19,7 @@ import ArchitectureImportsExample from '!!raw-loader!./code/10_architecture_impo
 import PluggingInAsyncExample from '!!raw-loader!./code/10_plugging_in_async.py';
 import PluggingInSyncExample from '!!raw-loader!./code/10_plugging_in_sync.py';
 
-The Scrapely API client uses a pluggable HTTP client architecture. By default, it ships with an [Impit](https://impit.dev)-based HTTP client that handles retries, timeouts, passing headers, and more. You can replace it with your own implementation for use cases like custom logging, proxying, request modification, or integrating with a different HTTP library.
+The Scrapely API client uses a pluggable HTTP client architecture. By default, it ships with an [Impit](https://pypi.org/project/impit/)-based HTTP client that handles retries, timeouts, passing headers, and more. You can replace it with your own implementation for use cases like custom logging, proxying, request modification, or integrating with a different HTTP library.
 
 ## Default HTTP client
 
@@ -54,7 +54,7 @@ The HTTP client system is built on two key abstractions:
 
 To plug in your custom implementation, use the <ApiLink to="class/ScrapelyClient#with_custom_http_client">`ScrapelyClient.with_custom_http_client`</ApiLink> class method.
 
-All of these are available as top-level imports from the `scrapely_client` package:
+All of these are available as imports from the `scrapely_client.http_clients` module:
 
 <CodeBlock className="language-python">
     {ArchitectureImportsExample}
@@ -94,7 +94,7 @@ It must return an object satisfying the <ApiLink to="class/HttpResponse">`HttpRe
 | `aiter_bytes() -> AsyncIterator[bytes]` | Iterate body in chunks (async) |
 
 :::note
-Many HTTP libraries, including our default [Impit](https://impit.dev) or for example [HTTPX](https://www.python-httpx.org/) already satisfy this protocol out of the box.
+Many HTTP libraries, including our default [Impit](https://pypi.org/project/impit/) or for example [HTTPX](https://www.python-httpx.org/) already satisfy this protocol out of the box.
 :::
 
 ### Plugging it in
@@ -131,4 +131,4 @@ Custom HTTP clients might be useful when you need to:
 - **Modify requests** - Add custom fields, modify the body, or change headers.
 - **Collect custom metrics** - Measure request latency, track error rates, or count API calls.
 
-For a step-by-step walkthrough of building a custom HTTP client, see the [Using HTTPX as the HTTP client](/api/client/python/docs/guides/custom-http-client-httpx) guide.
+For a step-by-step walkthrough of building a custom HTTP client, see the [Using HTTPX as the HTTP client](../03_guides/05_custom_http_client.mdx) guide.

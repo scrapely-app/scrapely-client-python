@@ -11,7 +11,7 @@ def main() -> None:
     scrapely_client = ScrapelyClient(token=TOKEN)
 
     # Get the Actor client
-    actor_client = scrapely_client.actor('scrapely/instagram-hashtag-scraper')
+    actor_client = scrapely_client.actor('echofield/instagram-hashtag-scraper')
 
     input_data = {'hashtags': ['rainbow'], 'resultsLimit': 20}
 
