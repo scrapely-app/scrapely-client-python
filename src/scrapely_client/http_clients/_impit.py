@@ -86,6 +86,22 @@ _STORAGE_COLLECTION_PATH_RE = re.compile(r'/(?:datasets|key-value-stores|request
 # so resending can't apply it twice.
 _NOT_APPLIED_STATUS_CODES = frozenset({HTTPStatus.BAD_GATEWAY, HTTPStatus.SERVICE_UNAVAILABLE})
 
+# The API answers its own 502/504 as 503 with the original in this header, so the edge (Cloudflare) keeps the
+# error body. Retry decisions use the original: a 504 (e.g. a Standby container timeout) may have been applied.
+_ORIGINAL_STATUS_HEADER = 'x-scrapely-status'
+
+
+def _effective_status(response: Any) -> int:
+    """The status to act on: the original 502/504 of a 503 that carries X-Scrapely-Status, else the HTTP status."""
+    status = response.status_code
+    if status != HTTPStatus.SERVICE_UNAVAILABLE:
+        return status
+    try:
+        original = int((response.headers or {}).get(_ORIGINAL_STATUS_HEADER) or 0)
+    except (TypeError, ValueError):
+        return status
+    return original if original in (HTTPStatus.BAD_GATEWAY, HTTPStatus.GATEWAY_TIMEOUT) else status
+
 # Keyed requests: the first request with the key is still being applied, so a resend gets its answer shortly.
 _KEY_IN_PROGRESS_ERROR_TYPE = 'idempotency-key-in-progress'
 # Keyed requests: the server can't tell whether the first request was applied, and no resend changes that.
@@ -312,7 +328,7 @@ class ImpitHttpClient(HttpClient):
             stop_retrying()
         elif (
             response.status_code != HTTPStatus.TOO_MANY_REQUESTS
-            and response.status_code not in _NOT_APPLIED_STATUS_CODES
+            and _effective_status(response) not in _NOT_APPLIED_STATUS_CODES
             and _is_unsafe_to_resend(method, url, headers, params)
         ):
             logger.debug(
@@ -605,7 +621,7 @@ class ImpitHttpClientAsync(HttpClientAsync):
             stop_retrying()
         elif (
             response.status_code != HTTPStatus.TOO_MANY_REQUESTS
-            and response.status_code not in _NOT_APPLIED_STATUS_CODES
+            and _effective_status(response) not in _NOT_APPLIED_STATUS_CODES
             and _is_unsafe_to_resend(method, url, headers, params)
         ):
             logger.debug(
