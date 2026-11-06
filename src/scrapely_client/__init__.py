@@ -10,6 +10,7 @@ from ._charging import (
     normalize_items,
     push_data_charging_context,
 )
+from ._credit_unlock import credit_unlock_url, held_run_warning, is_insufficient_credit_error
 from ._scrapely_client import ApifyClient, ApifyClientAsync, ScrapelyClient, ScrapelyClientAsync
 
 try:
@@ -27,6 +28,9 @@ __all__ = [
     'ScrapelyClient',
     'ScrapelyClientAsync',
     '__version__',
+    'credit_unlock_url',
+    'held_run_warning',
+    'is_insufficient_credit_error',
     'normalize_items',
     'push_data_charging_context',
 ]

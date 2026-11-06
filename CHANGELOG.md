@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.12] - 2026-11-06
+
+- `Run.held` (`RunHeld`): results a run found after the free credit ran out, kept out of its dataset until unlocked. All `RunHeld` / `CreditUnlock` fields are optional, so a partial object never fails `Run.model_validate`. `RunClient.wait_for_finish()` (and so `ActorClient.call()` / `TaskClient.call()`, sync and async) logs one warning with the count and the unlock link when the run has held results.
+- Models regenerated from the updated specification (`scrapely-v2-2026-11-06`), which also picks up the current run retention text of `UpdateLimitsRequest.data_retention_days`.
+
 ## [1.0.11] - 2026-11-04
 
 - The API now sends its own 502 and 504 answers as 503 with the original status in the `X-Scrapely-Status` header (so the error body reaches you through Cloudflare). A 503 with `X-Scrapely-Status: 504` is treated like a 504: a POST or PATCH without an `Idempotency-Key` is not resent after it, since it may already have been applied. A 503 with `X-Scrapely-Status: 502` is retried like a 502.

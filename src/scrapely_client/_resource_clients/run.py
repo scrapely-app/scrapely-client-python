@@ -9,6 +9,7 @@ import time
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
+from scrapely_client._credit_unlock import warn_if_held
 from scrapely_client._docs import docs_group
 from scrapely_client._logging import create_redirect_logger
 from scrapely_client._models import Run, RunResponse
@@ -158,7 +159,10 @@ class RunClient(ResourceClient):
         if response is None:
             return None
 
-        return Run.model_validate(response)
+        run = Run.model_validate(response)
+        # Results held because the free credit ran out: one line with the count and the unlock link.
+        warn_if_held(run)
+        return run
 
     def metamorph(
         self,
@@ -565,7 +569,10 @@ class RunClientAsync(ResourceClientAsync):
             wait_duration=wait_duration,
             timeout=timeout,
         )
-        return Run.model_validate(response) if response is not None else None
+        run = Run.model_validate(response) if response is not None else None
+        # Results held because the free credit ran out: one line with the count and the unlock link.
+        warn_if_held(run)
+        return run
 
     async def delete(self, *, timeout: Timeout = 'short') -> None:
         """Delete the run.

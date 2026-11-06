@@ -120,6 +120,7 @@ ErrorType = (
         'cannot-unpublish-paid-actor',
         'cannot-unpublish-profile',
         'cannot-update-invoice-field',
+        'charge-limit-exceeded',
         'concurrent-runs-limit-exceeded',
         'concurrent-update-detected',
         'conference-token-not-found',
@@ -177,6 +178,8 @@ ErrorType = (
         'input-json-not-object',
         'input-json-too-long',
         'input-update-collision',
+        'insufficient-balance',
+        'insufficient-funds',
         'insufficient-permissions',
         'insufficient-permissions-to-change-field',
         'insufficient-security-measures',
@@ -295,6 +298,7 @@ ErrorType = (
         'password-reset-token-expired',
         'pay-as-you-go-without-monthly-interval',
         'payment-attempt-status-message-required',
+        'payment-required',
         'payout-already-paid',
         'payout-canceled',
         'payout-invalid-state',
@@ -487,6 +491,18 @@ SourceCodeFileFormat = (
     ]
     | str
 )
+
+
+Status = (
+    Literal[
+        'holding',
+        'held',
+        'released',
+        'expired',
+    ]
+    | str
+)
+"""`holding` (run running), `held`, `released` (now in the dataset) or `expired`."""
 
 
 StorageOwnership = (

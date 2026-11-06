@@ -19,6 +19,7 @@ from scrapely_client._literals import (
     HttpMethod,
     RunOrigin,
     SourceCodeFileFormat,
+    Status,
     VersionSourceType,
     WebhookDispatchStatus,
     WebhookEventType,
@@ -884,6 +885,43 @@ class CreateTaskRequest(BaseModel):
 
 
 @docs_group('Models')
+class CreditUnlock(BaseModel):
+    """The plan that unlocks held results, or lets an account whose free credit is used up keep running. Prices come from the platform's plan table."""
+
+    model_config = ConfigDict(
+        extra='allow',
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
+    plan: Annotated[str | None, Field(examples=['starter'])] = None
+    """
+    Plan id.
+    """
+    plan_name: Annotated[str | None, Field(examples=['Starter'])] = None
+    """
+    Plan name.
+    """
+    price_usd: Annotated[float | None, Field(examples=[19])] = None
+    """
+    Price of one plan period (4 weeks) in USD.
+    """
+    credit_usd: Annotated[float | None, Field(examples=[19])] = None
+    """
+    Credit the plan grants every period, in USD.
+    """
+    held_items_cost_usd: Annotated[float | None, Field(examples=[0.48])] = None
+    """
+    What the run's held results cost out of that credit (run `held.unlock` only).
+    """
+    checkout_url: Annotated[
+        str | None, Field(examples=['https://my.scrape.ly/runs/HG7ML7M8z78YcAPEB?unlock=starter'])
+    ] = None
+    """
+    Console link that opens the checkout. It carries no token; the console asks for the user's login.
+    """
+
+
+@docs_group('Models')
 class Current(BaseModel):
     model_config = ConfigDict(
         extra='allow',
@@ -1359,6 +1397,10 @@ class ErrorDetail(BaseModel):
     """
     Human-readable error message describing what went wrong.
     """
+    data: dict[str, Any] | None = None
+    """
+    Additional data about the error; for an HTTP 402 for the balance see InsufficientCreditErrorData.
+    """
 
 
 @docs_group('Models')
@@ -1491,6 +1533,46 @@ class HeadResponse(BaseModel):
         alias_generator=to_camel,
     )
     data: RequestQueueHead
+
+
+@docs_group('Models')
+class InsufficientCreditErrorData(BaseModel):
+    """`error.data` of an HTTP 402 for the account balance."""
+
+    model_config = ConfigDict(
+        extra='allow',
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
+    reason: Annotated[str | None, Field(examples=['insufficient-credit'])] = None
+    """
+    `insufficient-credit` (the run's own charge route keeps `insufficient-funds`).
+    """
+    plan: Annotated[str | None, Field(examples=['free'])] = None
+    """
+    The account's plan id.
+    """
+    unlock: CreditUnlock | None = None
+    """
+    The Starter offer for a Free account; null for a paid account.
+    """
+    top_up_url: str | None = None
+    """
+    A paid account's billing page, to add credit.
+    """
+    held_items: int | None = None
+    """
+    Held results of the account's newest held run.
+    """
+    held_until: AwareDatetime | None = None
+    run_id: str | None = None
+    """
+    That held run.
+    """
+    kyc_url: str | None = None
+    """
+    Set when the account's free credit waits for identity verification.
+    """
 
 
 @docs_group('Models')
@@ -2987,6 +3069,47 @@ class Run(BaseModel):
     """
     Indicates which party covers platform usage costs for this run.
     """
+    held: RunHeld | None = None
+    """
+    Results held because the account's free credit ran out (owner only; absent when nothing is held).
+    """
+
+
+@docs_group('Models')
+class RunHeld(BaseModel):
+    """Results the run found after the account's free credit ran out. They are kept out of the run's dataset until the account unlocks them or `heldUntil` passes. Only on the owner's run. Every field is optional: a partial object never fails the run."""
+
+    model_config = ConfigDict(
+        extra='allow',
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
+    status: Status | None = None
+    """
+    `holding` (run running), `held`, `released` (now in the dataset) or `expired`.
+    """
+    items: Annotated[int | None, Field(examples=[1653])] = None
+    """
+    Number of held results.
+    """
+    events: dict[str, int] | None = None
+    """
+    Held charge events by event name.
+    """
+    saved_items: Annotated[int | None, Field(examples=[1347])] = None
+    """
+    Results saved to the dataset before the credit ran out.
+    """
+    held_until: AwareDatetime | None = None
+    """
+    When the held results are deleted unless unlocked.
+    """
+    released_at: AwareDatetime | None = None
+    expired_at: AwareDatetime | None = None
+    unlock: CreditUnlock | None = None
+    """
+    How to unlock them.
+    """
 
 
 @docs_group('Models')
@@ -3763,7 +3886,7 @@ class UpdateLimitsRequest(BaseModel):
     """
     data_retention_days: Annotated[int | None, Field(examples=[90])] = None
     """
-    How many days unnamed storages (datasets, key-value stores and request queues without a name) are kept: Free 2 days (48 hours), Starter 31, Scale 60, Business 90. Runs and their logs are kept for the same time as their results; on the Free plan your latest 10 runs are kept with their results until you delete them. This value is set by your plan and cannot be changed through the API.
+    How many days unnamed storages (datasets, key-value stores and request queues without a name) are kept: Free 2 days (48 hours), Starter 31, Scale 60, Business 90. Runs follow their own retention: on the Free plan the latest 10 runs per Actor are kept and older ones are deleted after 7 days; on paid plans runs are deleted after 31 days. This value is set by your plan and cannot be changed through the API.
 
     """
 
