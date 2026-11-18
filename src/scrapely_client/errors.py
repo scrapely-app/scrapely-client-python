@@ -14,17 +14,17 @@ if TYPE_CHECKING:
 
 
 @docs_group('Errors')
-class ApifyClientError(Exception):
+class ScrapelyClientError(Exception):
     """Base class for all Scrapely API client errors."""
 
 
 @docs_group('Errors')
-class ApifyApiError(ApifyClientError):
+class ScrapelyApiError(ScrapelyClientError):
     """Error raised when the Scrapely API returns an error response.
 
-    Instantiating `ApifyApiError` dispatches to the subclass matching the HTTP status code (e.g. 404 → `NotFoundError`,
-    any 5xx → `ServerError`). Unmapped statuses stay on `ApifyApiError`. Existing `except ApifyApiError` handlers keep
-    working because every subclass inherits from this class.
+    Instantiating `ScrapelyApiError` dispatches to the subclass matching the HTTP status code (e.g. 404 →
+    `NotFoundError`, any 5xx → `ServerError`). Unmapped statuses stay on `ScrapelyApiError`. Existing
+    `except ScrapelyApiError` handlers keep working because every subclass inherits from this class.
 
     The `type`, `message` and `data` fields from the response body are exposed for inspection but are treated as
     non-authoritative metadata — dispatch is driven by the status code only.
@@ -44,7 +44,7 @@ class ApifyApiError(ApifyClientError):
     def __new__(cls, response: HttpResponse, attempt: int, *, method: str = 'GET') -> Self:  # noqa: ARG004
         """Dispatch to the subclass matching the response's HTTP status code, if any."""
         instance = super().__new__(cls)
-        if cls is ApifyApiError:
+        if cls is ScrapelyApiError:
             status = response.status_code
             mapped = _STATUS_TO_CLASS.get(status)
             if mapped is None and status >= HTTPStatus.INTERNAL_SERVER_ERROR:
@@ -98,32 +98,32 @@ class ApifyApiError(ApifyClientError):
 
 
 @docs_group('Errors')
-class InvalidRequestError(ApifyApiError):
+class InvalidRequestError(ScrapelyApiError):
     """Raised when the Scrapely API returns an HTTP 400 Bad Request response."""
 
 
 @docs_group('Errors')
-class UnauthorizedError(ApifyApiError):
+class UnauthorizedError(ScrapelyApiError):
     """Raised when the Scrapely API returns an HTTP 401 Unauthorized response."""
 
 
 @docs_group('Errors')
-class ForbiddenError(ApifyApiError):
+class ForbiddenError(ScrapelyApiError):
     """Raised when the Scrapely API returns an HTTP 403 Forbidden response."""
 
 
 @docs_group('Errors')
-class NotFoundError(ApifyApiError):
+class NotFoundError(ScrapelyApiError):
     """Raised when the Scrapely API returns an HTTP 404 Not Found response."""
 
 
 @docs_group('Errors')
-class ConflictError(ApifyApiError):
+class ConflictError(ScrapelyApiError):
     """Raised when the Scrapely API returns an HTTP 409 Conflict response."""
 
 
 @docs_group('Errors')
-class RateLimitError(ApifyApiError):
+class RateLimitError(ScrapelyApiError):
     """Raised when the Scrapely API returns an HTTP 429 Too Many Requests response.
 
     Rate-limited requests are retried automatically; this error is only raised after all retry attempts have been
@@ -132,7 +132,7 @@ class RateLimitError(ApifyApiError):
 
 
 @docs_group('Errors')
-class ServerError(ApifyApiError):
+class ServerError(ScrapelyApiError):
     """Raised when the Scrapely API returns an HTTP 5xx response.
 
     Server errors are retried automatically; this error is only raised after all retry attempts have been exhausted.
@@ -140,7 +140,7 @@ class ServerError(ApifyApiError):
 
 
 @docs_group('Errors')
-class InvalidResponseBodyError(ApifyClientError):
+class InvalidResponseBodyError(ScrapelyClientError):
     """Error raised when a response body cannot be parsed.
 
     This occurs when the API returns a body that does not match its content type, for example a malformed JSON
@@ -160,13 +160,12 @@ class InvalidResponseBodyError(ApifyClientError):
         self.response = response
 
 
-# Scrapely-named aliases for the error classes. The original class names stay part of the
-# client's backward-compatibility contract (existing code keeps working); these aliases let
-# Scrapely-native code use the platform name.
-ScrapelyApiError = ApifyApiError
-ScrapelyClientError = ApifyClientError
+# Compatibility aliases (the same classes). The earlier class names stay part of the client's
+# backward-compatibility contract, so existing imports and `except ApifyApiError` handlers keep working.
+ApifyApiError = ScrapelyApiError
+ApifyClientError = ScrapelyClientError
 
-_STATUS_TO_CLASS: dict[int, type[ApifyApiError]] = {
+_STATUS_TO_CLASS: dict[int, type[ScrapelyApiError]] = {
     400: InvalidRequestError,
     401: UnauthorizedError,
     403: ForbiddenError,

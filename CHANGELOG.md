@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.13] - 2026-11-18
+
+- Charged dataset pushes: the default dataset's client asks the charging hooks on every push whether to charge, not only when the client was created, so pricing that loads later and a spending limit reached during the run apply to the next push (sync and async).
+
 ## [1.0.12] - 2026-11-06
 
 - `Run.held` (`RunHeld`): results a run found after the free credit ran out, kept out of its dataset until unlocked. All `RunHeld` / `CreditUnlock` fields are optional, so a partial object never fails `Run.model_validate`. `RunClient.wait_for_finish()` (and so `ActorClient.call()` / `TaskClient.call()`, sync and async) logs one warning with the count and the unlock link when the run has held results.

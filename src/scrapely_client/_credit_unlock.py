@@ -2,7 +2,7 @@
 """Read the unlock data of an "out of credit" answer and warn about held results.
 
 When the account's free credit runs out, the API answers run starts (and other paid requests) with HTTP 402 and puts
-the way out in `error.data` (`ApifyApiError.data`): `unlock` (the Starter offer and its `checkoutUrl`) for a Free
+the way out in `error.data` (`ScrapelyApiError.data`): `unlock` (the Starter offer and its `checkoutUrl`) for a Free
 account, `topUpUrl` for a paid one, and the account's newest held run (`heldItems`, `heldUntil`, `runId`). A run
 that went on finding results after the credit ran out has `held` (`RunHeld`): the results are kept out of its
 dataset until the account unlocks them.

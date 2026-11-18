@@ -122,7 +122,9 @@ def _merge_context_charge_result(context: PpeAwarePushDataContext, hooks: Chargi
         context.charge_result = hooks.merge_charge_results(context.charge_result, result)
 
 
-def wrap_dataset_client_with_charging(client: Any, hooks: ChargingHooks, *, is_async: bool) -> Any:
+def wrap_dataset_client_with_charging(
+    client: Any, hooks: ChargingHooks, *, is_async: bool, dataset_id: str | None = None
+) -> Any:
     """Wrap a dataset client's ``push_items`` with charging interception (method swap by design).
 
     Normalize items →
@@ -132,9 +134,17 @@ def wrap_dataset_client_with_charging(client: Any, hooks: ChargingHooks, *, is_a
     """
     original_push_items = client.push_items
 
+    def _charges() -> bool:
+        # Asked on every push, not when the client was created: pricing loads and
+        # the spending limit is reached after a client may already exist.
+        return dataset_id is None or hooks.should_charge_dataset_pushes(dataset_id)
+
     if is_async:
 
         async def patched_push_items(items: Any, **kwargs: Any) -> None:
+            if not _charges():
+                await original_push_items(items, **kwargs)
+                return
             context = push_data_charging_context.get()
             normalized = normalize_items(items)
 
@@ -153,6 +163,9 @@ def wrap_dataset_client_with_charging(client: Any, hooks: ChargingHooks, *, is_a
     else:
 
         def patched_push_items(items: Any, **kwargs: Any) -> None:
+            if not _charges():
+                original_push_items(items, **kwargs)
+                return
             context = push_data_charging_context.get()
             normalized = normalize_items(items)
 

@@ -100,7 +100,7 @@ def _resolve_api_url(api_url: str | None) -> str:
 
 
 @docs_group('Scrapely API clients')
-class ApifyClient:
+class ScrapelyClient:
     """Synchronous client for the Scrapely API.
 
     This is the main entry point for interacting with the Scrapely platform. It provides methods to access
@@ -246,7 +246,7 @@ class ApifyClient:
         api_url: str | None = None,
         api_public_url: str | None = DEFAULT_API_URL,
         http_client: HttpClient,
-    ) -> ApifyClient:
+    ) -> ScrapelyClient:
         """Create an `ScrapelyClient` instance with a custom HTTP client.
 
         Use this alternative constructor when you want to provide your own HTTP client implementation
@@ -364,12 +364,10 @@ class ApifyClient:
             dataset_id: ID of the dataset to be manipulated.
         """
         dataset_client = DatasetClient(resource_id=dataset_id, **self._base_kwargs)
-        if (
-            self._charging_hooks is not None
-            and dataset_id == self._default_dataset_id
-            and self._charging_hooks.should_charge_dataset_pushes(dataset_id)
-        ):
-            return wrap_dataset_client_with_charging(dataset_client, self._charging_hooks, is_async=False)
+        if self._charging_hooks is not None and dataset_id == self._default_dataset_id:
+            return wrap_dataset_client_with_charging(
+                dataset_client, self._charging_hooks, is_async=False, dataset_id=dataset_id
+            )
         return dataset_client
 
     def datasets(self) -> DatasetCollectionClient:
@@ -483,7 +481,7 @@ class ApifyClient:
 
 
 @docs_group('Scrapely API clients')
-class ApifyClientAsync:
+class ScrapelyClientAsync:
     """Asynchronous client for the Scrapely API.
 
     This is the main entry point for interacting with the Scrapely platform using async/await. It provides
@@ -636,7 +634,7 @@ class ApifyClientAsync:
         api_url: str | None = None,
         api_public_url: str | None = DEFAULT_API_URL,
         http_client: HttpClientAsync,
-    ) -> ApifyClientAsync:
+    ) -> ScrapelyClientAsync:
         """Create an `ScrapelyClientAsync` instance with a custom HTTP client.
 
         Use this alternative constructor when you want to provide your own HTTP client implementation
@@ -753,12 +751,10 @@ class ApifyClientAsync:
             dataset_id: ID of the dataset to be manipulated.
         """
         dataset_client = DatasetClientAsync(resource_id=dataset_id, **self._base_kwargs)
-        if (
-            self._charging_hooks is not None
-            and dataset_id == self._default_dataset_id
-            and self._charging_hooks.should_charge_dataset_pushes(dataset_id)
-        ):
-            return wrap_dataset_client_with_charging(dataset_client, self._charging_hooks, is_async=True)
+        if self._charging_hooks is not None and dataset_id == self._default_dataset_id:
+            return wrap_dataset_client_with_charging(
+                dataset_client, self._charging_hooks, is_async=True, dataset_id=dataset_id
+            )
         return dataset_client
 
     def datasets(self) -> DatasetCollectionClientAsync:
@@ -871,8 +867,8 @@ class ApifyClientAsync:
         return StoreCollectionClientAsync(**self._base_kwargs)
 
 
-ScrapelyClient = ApifyClient
-"""Primary name of the client; ``ApifyClient`` is kept as a drop-in compatibility alias."""
+ApifyClient = ScrapelyClient
+"""Compatibility alias of `ScrapelyClient` (the same class), kept so existing imports keep working."""
 
-ScrapelyClientAsync = ApifyClientAsync
-"""Primary name of the async client; ``ApifyClientAsync`` is kept as a drop-in compatibility alias."""
+ApifyClientAsync = ScrapelyClientAsync
+"""Compatibility alias of `ScrapelyClientAsync` (the same class), kept so existing imports keep working."""

@@ -369,7 +369,7 @@ class RunClient(ResourceClient):
 
         if not to_logger:
             name = ' '.join(part for part in (actor_name, run_id) if part)
-            to_logger = create_redirect_logger(f'apify.{name}')
+            to_logger = create_redirect_logger(f'scrapely.{name}')
 
         return StreamedLog(log_client=self.log(), to_logger=to_logger, from_start=from_start)
 
@@ -456,7 +456,7 @@ class RunClient(ResourceClient):
 
         if not to_logger:
             name = ' '.join(part for part in (actor_name, run_id) if part)
-            to_logger = create_redirect_logger(f'apify.{name}')
+            to_logger = create_redirect_logger(f'scrapely.{name}')
 
         return StatusMessageWatcher(run_client=self, to_logger=to_logger, check_period=check_period)
 
@@ -791,7 +791,7 @@ class RunClientAsync(ResourceClientAsync):
 
         if not to_logger:
             name = ' '.join(part for part in (actor_name, run_id) if part)
-            to_logger = create_redirect_logger(f'apify.{name}')
+            to_logger = create_redirect_logger(f'scrapely.{name}')
 
         return StreamedLogAsync(log_client=self.log(), to_logger=to_logger, from_start=from_start)
 
@@ -879,6 +879,6 @@ class RunClientAsync(ResourceClientAsync):
 
         if not to_logger:
             name = ' '.join(part for part in (actor_name, run_id) if part)
-            to_logger = create_redirect_logger(f'apify.{name}')
+            to_logger = create_redirect_logger(f'scrapely.{name}')
 
         return StatusMessageWatcherAsync(run_client=self, to_logger=to_logger, check_period=check_period)
